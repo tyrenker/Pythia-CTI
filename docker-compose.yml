@@ -1,0 +1,18 @@
+services:
+  pythia:
+    build: .
+    image: pythia:dev
+    container_name: pythia
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override DB path so it lands inside the mounted ./db/ directory.
+      # The .env default (./pythia.db) is for local non-Docker dev.
+      PYTHIA_DATABASE_URL: "sqlite:////app/db/pythia.db"
+      PYTHIA_DB_FILE: "/app/db/pythia.db"
+    volumes:
+      - ./data:/app/data      # sigma rules, yara rules, seed data
+      - ./db:/app/db          # persistent user data — never deleted on restart
+    restart: unless-stopped

@@ -1,0 +1,25 @@
+title: Certutil Remote File Download
+id: 3b4b5b8a-2e3f-4a0c-9b7e-6d8f5c3a1b2c
+status: stable
+description: Detects use of certutil.exe to download files from the internet, a common LOLBAS technique for file transfer.
+references:
+    - https://attack.mitre.org/techniques/T1105/
+author: Pythia Curated (adapted from SigmaHQ)
+date: 2024-01-01
+tags:
+    - attack.command_and_control
+    - attack.t1105
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection:
+        Image|endswith: '\certutil.exe'
+        CommandLine|contains:
+            - '-urlcache'
+            - '-split'
+            - 'http'
+    condition: selection
+falsepositives:
+    - System administrators using certutil for legitimate certificate operations
+level: high

@@ -1,0 +1,26 @@
+title: Windows Brute Force Authentication Failures
+id: b4c5d6e7-f8a9-b0c1-d2e3-f4a5b6c7d8e9
+status: stable
+description: Detects multiple failed authentication attempts against Windows accounts, indicating a brute-force or password spray attack.
+references:
+    - https://attack.mitre.org/techniques/T1110/
+author: Pythia Curated (adapted from SigmaHQ)
+date: 2024-01-01
+tags:
+    - attack.credential_access
+    - attack.t1110
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4625
+        LogonType:
+            - 3
+            - 10
+    timeframe: 5m
+    condition: selection | count() by SubjectUserName > 10
+falsepositives:
+    - Mistyped passwords by legitimate users
+    - Service account lock-outs during password changes
+level: medium

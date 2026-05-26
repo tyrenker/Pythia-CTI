@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+.installed.cfg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# Linting
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Pythia runtime data — local DB files are never committed
+pythia.db
+pythia.db-journal
+db/pythia.db
+db/pythia.db-shm
+db/pythia.db-wal
+*.sqlite
+*.sqlite3
+data/cache/
+data/runtime/
+
+# Generated reports
+output/
+reports/*.pdf
+
+# Docs build
+site/
+
+# Secrets
+*.pem
+*.key
+secrets/
+
+# Internal development plans and docs — never push
+internal_docs/
+memory/

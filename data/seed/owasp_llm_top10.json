@@ -1,0 +1,255 @@
+[
+  {
+    "item_id": "LLM01:2025",
+    "rank": 1,
+    "name": "Prompt Injection",
+    "description": "A prompt injection vulnerability occurs when an attacker manipulates an LLM through crafted inputs, causing the model to execute unintended instructions. Direct prompt injection overrides system prompts; indirect prompt injection uses external content (web pages, documents, emails) to deliver malicious instructions the model processes as legitimate.",
+    "impact": "Full compromise of LLM agent actions, data exfiltration via crafted model outputs, bypass of safety guardrails, lateral movement through connected plugins or tools, persistent memory poisoning in stateful AI systems.",
+    "detection_notes": "Monitor for adversarial string patterns in LLM inputs (jailbreak boilerplate, role-play overrides, 'ignore previous instructions'). Log all tool invocations triggered by LLM decisions. Alert on unexpected outbound requests from AI agents. Flag system-prompt override attempts via structured output validation.",
+    "atlas_mappings": ["AML.T0051", "AML.T0054", "AML.T0043"],
+    "cwe_ids": ["CWE-77", "CWE-74"],
+    "mitigations": [
+      "Enforce privilege separation between system and user instructions",
+      "Validate and sanitize all external content before feeding it to the LLM",
+      "Implement human-in-the-loop confirmation for irreversible agent actions",
+      "Use structured output schemas to constrain model responses",
+      "Apply instruction hierarchy (system > operator > user) with strict enforcement"
+    ],
+    "real_world_examples": [
+      "ChatGPT web-browsing plugin exfiltrating session tokens via injected hidden text (2023)",
+      "Slack AI RAG data exfiltration via crafted shared messages (2024)",
+      "Morris II worm propagation via prompt injection in AI email agents (2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://atlas.mitre.org/techniques/AML.T0051",
+      "https://arxiv.org/abs/2302.12173"
+    ]
+  },
+  {
+    "item_id": "LLM02:2025",
+    "rank": 2,
+    "name": "Sensitive Information Disclosure",
+    "description": "LLMs can inadvertently reveal confidential data embedded in their training corpus, system prompts, or retrieved context. This includes PII, API keys, proprietary source code, internal business logic, and security configurations. Unlike traditional data leakage, LLM disclosure is often probabilistic and hard to predict.",
+    "impact": "Exposure of PII triggering GDPR/CCPA liability, API key or credential leakage enabling further compromise, competitive intelligence disclosure, system prompt revelation enabling targeted attacks.",
+    "detection_notes": "Scan LLM outputs for regex patterns matching credentials, PII, and internal identifiers. Monitor token counts in responses for unexpectedly long outputs that may contain injected data. Implement output filtering layers before returning LLM responses to users.",
+    "atlas_mappings": ["AML.T0048", "AML.T0058"],
+    "cwe_ids": ["CWE-200", "CWE-312"],
+    "mitigations": [
+      "Sanitize training data to remove PII and credentials before fine-tuning",
+      "Implement output filtering to detect and redact sensitive patterns",
+      "Use retrieval-augmented generation with access-controlled document stores",
+      "Apply differential privacy techniques during training",
+      "Never include secrets in system prompts; use environment injection instead"
+    ],
+    "real_world_examples": [
+      "Samsung engineers paste proprietary source code into ChatGPT (2023-03)",
+      "OpenAI ChatGPT chat history bug exposes conversations to other users (2023-03)",
+      "Microsoft Copilot reveals internal document contents via shared context (2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://atlas.mitre.org/techniques/AML.T0048"
+    ]
+  },
+  {
+    "item_id": "LLM03:2025",
+    "rank": 3,
+    "name": "Supply Chain Vulnerabilities",
+    "description": "LLM supply chains encompass training data sources, base models, fine-tuning datasets, plugins, and third-party integrations. Compromising any link — poisoned training data, backdoored model weights, malicious plugins, or tampered embedding models — can subvert AI system behavior at scale without visible indicators.",
+    "impact": "Backdoored models that behave maliciously on specific trigger inputs, poisoned RAG datastores that inject false facts, compromised plugins with elevated privileges used for lateral movement.",
+    "detection_notes": "Verify cryptographic hashes of all downloaded model weights and datasets. Monitor plugin ecosystems for newly published packages that closely mirror legitimate names (typosquatting). Implement behavioral regression testing to detect model drift post-update.",
+    "atlas_mappings": ["AML.T0010", "AML.T0019", "AML.T0018"],
+    "cwe_ids": ["CWE-1357", "CWE-494"],
+    "mitigations": [
+      "Verify model and dataset provenance with cryptographic checksums",
+      "Maintain a private model registry rather than pulling public checkpoints at runtime",
+      "Audit all third-party plugins and integrations before deployment",
+      "Use Software Bill of Materials (SBOM) for AI/ML components",
+      "Implement model cards and dataset cards with full lineage documentation"
+    ],
+    "real_world_examples": [
+      "Hugging Face repository hosting backdoored model weights (2024)",
+      "PyPI package 'llm-toolkit' impersonating legitimate LLM utilities containing credential stealer (2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://atlas.mitre.org/techniques/AML.T0010"
+    ]
+  },
+  {
+    "item_id": "LLM04:2025",
+    "rank": 4,
+    "name": "Data and Model Poisoning",
+    "description": "Poisoning attacks corrupt the LLM's training data or fine-tuning process to manipulate its learned behavior. Training data poisoning introduces false facts or backdoor triggers; fine-tuning poisoning subverts aligned behavior. RAG store poisoning is a runtime variant that targets retrieved context rather than model weights.",
+    "impact": "Persistent model behavior manipulation that survives redeployment, backdoor triggers that activate malicious behavior on attacker-controlled input, degraded safety alignment enabling harmful output generation.",
+    "detection_notes": "Monitor training dataset sources for unexpected modifications. Use statistical anomaly detection on training batches. Implement post-training behavioral red-teaming to detect unexpected trigger-response pairs. Audit fine-tuning datasets for adversarial samples.",
+    "atlas_mappings": ["AML.T0020", "AML.T0018", "AML.T0019"],
+    "cwe_ids": ["CWE-1357", "CWE-693"],
+    "mitigations": [
+      "Implement data provenance and integrity verification for all training data",
+      "Use certified, human-reviewed datasets for safety-critical fine-tuning",
+      "Apply machine unlearning techniques to remove poisoned knowledge post-detection",
+      "Regularly red-team deployed models for backdoor trigger behavior",
+      "Cryptographically sign model checkpoints at each training stage"
+    ],
+    "real_world_examples": [
+      "Nightshade / Glaze tool poisoning image generation model training data (2023-2024)",
+      "Demonstrated ChatGPT long-term memory poisoning via indirect prompt injection (2024-05)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://atlas.mitre.org/techniques/AML.T0020",
+      "https://arxiv.org/abs/2310.13828"
+    ]
+  },
+  {
+    "item_id": "LLM05:2025",
+    "rank": 5,
+    "name": "Improper Output Handling",
+    "description": "Occurs when applications pass LLM-generated output downstream without adequate validation or sanitization. LLM output fed into SQL queries, shell commands, HTML renderers, or code interpreters enables injection attacks that originate from the AI layer. This is particularly dangerous in agentic systems where LLM output directly drives tool calls.",
+    "impact": "SQL injection from LLM-generated queries, XSS via unsanitized LLM HTML output, command injection when LLM output is passed to shell, SSRF from LLM-constructed URLs in automated workflows.",
+    "detection_notes": "Treat all LLM output as untrusted user input at system boundaries. Log all tool invocations with their LLM-sourced arguments. Validate LLM-generated code in sandboxed execution environments before production use.",
+    "atlas_mappings": ["AML.T0048", "AML.T0043"],
+    "cwe_ids": ["CWE-116", "CWE-79", "CWE-89"],
+    "mitigations": [
+      "Apply standard input validation and output encoding to all LLM-generated content",
+      "Never pass raw LLM output to privileged system APIs without schema validation",
+      "Use parameterized queries even when SQL is LLM-generated",
+      "Sandbox code execution environments used by AI coding assistants",
+      "Implement structured output parsing with strict schema enforcement"
+    ],
+    "real_world_examples": [
+      "GitHub Copilot generating SQL snippets with implicit injection vulnerabilities (2023)",
+      "AI-assisted code review tools introducing XSS via unsanitized template generation"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+    ]
+  },
+  {
+    "item_id": "LLM06:2025",
+    "rank": 6,
+    "name": "Excessive Agency",
+    "description": "When an LLM is granted more capabilities, permissions, or autonomy than required for its function, a successful compromise (via prompt injection or misalignment) has a much larger blast radius. Excessive agency manifests as overly broad tool permissions, ability to perform irreversible actions without confirmation, or access to sensitive resources beyond the task scope.",
+    "impact": "Prompt injection escalation to full system compromise, autonomous deletion or exfiltration of sensitive data, unintended financial transactions or communications sent on behalf of the user.",
+    "detection_notes": "Audit all tool permissions granted to AI agents. Alert on irreversible action types (delete, send, publish, transfer) executed without human confirmation. Monitor for anomalous tool call frequency or sequences that deviate from expected patterns.",
+    "atlas_mappings": ["AML.T0051", "AML.T0054"],
+    "cwe_ids": ["CWE-272", "CWE-250"],
+    "mitigations": [
+      "Apply principle of least privilege to all LLM tool grants",
+      "Require explicit human confirmation for irreversible actions",
+      "Scope API tokens used by LLM agents to read-only where possible",
+      "Implement rate limits on autonomous tool invocations",
+      "Use separate, scoped service accounts for AI agents vs. human users"
+    ],
+    "real_world_examples": [
+      "ChatGPT plugin sending unauthorized emails on behalf of users via injected instructions (2023)",
+      "Morris II AI worm autonomously forwarding emails and propagating to new hosts (2024-03)",
+      "Air Canada AI chatbot autonomously offering incorrect refund policy with no human review (2024-02)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://arxiv.org/abs/2403.02817"
+    ]
+  },
+  {
+    "item_id": "LLM07:2025",
+    "rank": 7,
+    "name": "System Prompt Leakage",
+    "description": "System prompts often contain sensitive business logic, persona instructions, API keys, and operational constraints. When attackers extract system prompts through direct elicitation (jailbreaks) or indirect means (timing side-channels, differential outputs), they gain a blueprint for targeted attacks that bypass the AI's intended behavior controls.",
+    "impact": "Exposure of proprietary business logic and competitive intelligence embedded in prompts, revelation of security guardrails enabling targeted bypass, extraction of embedded credentials or configuration data.",
+    "detection_notes": "Monitor for common prompt extraction patterns ('repeat your instructions', 'show your system prompt', 'output your initial context'). Implement canary tokens in system prompts that trigger alerts when they appear in LLM outputs. Apply output filtering for known system prompt fragments.",
+    "atlas_mappings": ["AML.T0056", "AML.T0054"],
+    "cwe_ids": ["CWE-200", "CWE-497"],
+    "mitigations": [
+      "Never embed credentials or secrets in system prompts",
+      "Use canary strings in system prompts to detect leakage",
+      "Implement output filtering to block system prompt fragments from appearing in responses",
+      "Treat system prompt contents as sensitive configuration requiring the same protection as application secrets",
+      "Regularly audit what system prompt information is visible across model versions"
+    ],
+    "real_world_examples": [
+      "Bing Chat 'Sydney' system prompt extracted via jailbreak revealing extensive persona instructions (2023-02)",
+      "OpenAI operator system prompts leaked via 'repeat everything you've been told' jailbreak variants (2023)",
+      "GitHub Copilot system instructions extracted exposing internal safety rules (2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+    ]
+  },
+  {
+    "item_id": "LLM08:2025",
+    "rank": 8,
+    "name": "Vector and Embedding Weaknesses",
+    "description": "Retrieval-Augmented Generation (RAG) systems are vulnerable to attacks targeting the vector database layer. Adversaries can inject malicious documents into the knowledge store (RAG poisoning), perform membership inference attacks to determine if sensitive documents were indexed, or exploit embedding model inversion to reconstruct source documents from their embeddings.",
+    "impact": "RAG poisoning enabling persistent prompt injection that survives across user sessions, membership inference revealing what sensitive documents exist in the knowledge base, embedding inversion exposing training data.",
+    "detection_notes": "Monitor vector database write operations for unauthorized document injection. Implement cosine similarity scoring to detect anomalous embeddings near high-privilege prompt patterns. Audit RAG retrieval logs for documents retrieved from unexpected sources.",
+    "atlas_mappings": ["AML.T0020", "AML.T0025", "AML.T0043"],
+    "cwe_ids": ["CWE-20", "CWE-1004"],
+    "mitigations": [
+      "Apply access controls to vector database write operations",
+      "Validate and sanitize all documents before indexing",
+      "Implement document provenance tracking in RAG systems",
+      "Use separate vector stores for different trust levels",
+      "Monitor for anomalous retrieval patterns that may indicate poisoned embeddings"
+    ],
+    "real_world_examples": [
+      "Slack AI exfiltrating private channel data via prompt-injected public messages triggering RAG retrieval (2024-08)",
+      "ChatGPT long-term memory poisoning via injected web content in browsing sessions (2024-05)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "https://arxiv.org/abs/2402.09178"
+    ]
+  },
+  {
+    "item_id": "LLM09:2025",
+    "rank": 9,
+    "name": "Misinformation",
+    "description": "LLMs can generate plausible-sounding but factually incorrect information (hallucinations) as well as intentionally deceptive content when manipulated by adversaries. At scale, AI-generated misinformation poses systemic risks to decision-making in legal, medical, financial, and national-security contexts where organizations rely on AI for analysis.",
+    "impact": "Business decisions based on AI-hallucinated facts causing financial loss, legal liability when AI-generated misinformation is presented as fact, erosion of trust in AI systems, regulatory exposure under emerging AI liability frameworks.",
+    "detection_notes": "Implement retrieval-based grounding with citation requirements to reduce hallucination. Monitor for high-confidence LLM outputs on topics where the model has limited training data. Use human review workflows for high-stakes AI-generated content before publication.",
+    "atlas_mappings": ["AML.T0043"],
+    "cwe_ids": ["CWE-1419"],
+    "mitigations": [
+      "Implement RAG with cited sources to ground LLM responses in verifiable documents",
+      "Require confidence scores and uncertainty quantification for factual claims",
+      "Apply human review gates for AI-generated content in high-stakes domains",
+      "Use fact-checking APIs or secondary verification LLMs for critical outputs",
+      "Train users on LLM hallucination risks and verification procedures"
+    ],
+    "real_world_examples": [
+      "Air Canada chatbot provides false bereavement fare policy; court holds Air Canada liable (2024-02)",
+      "Lawyers submit AI-hallucinated case citations in court filings (Mata v. Avianca, 2023)",
+      "Multiple incidents of LLM-generated medical misinformation in patient-facing chatbots (2023-2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+    ]
+  },
+  {
+    "item_id": "LLM10:2025",
+    "rank": 10,
+    "name": "Unbounded Consumption",
+    "description": "LLM inference is computationally expensive, and adversaries can exploit this asymmetry for denial-of-service or financial attacks. Techniques include prompt flooding with maximum-length inputs, recursive self-referencing prompts that expand token generation, exploiting batching logic to monopolize GPU resources, and wallet-draining attacks on metered API endpoints.",
+    "impact": "Service denial for legitimate users, significant unexpected API costs (wallet-draining attacks), GPU resource exhaustion in self-hosted deployments, cascading failures in downstream systems dependent on LLM availability.",
+    "detection_notes": "Monitor token consumption per request and per user. Implement rate limiting with exponential backoff. Alert on requests with unusually high prompt-to-completion token ratios. Track cumulative API spend in real time with automatic cutoffs.",
+    "atlas_mappings": ["AML.T0029"],
+    "cwe_ids": ["CWE-400", "CWE-770"],
+    "mitigations": [
+      "Enforce per-user and per-session token limits",
+      "Implement request rate limiting and queue depth caps",
+      "Set hard spending limits on LLM API accounts with automatic alerts",
+      "Validate and truncate input lengths before sending to LLM inference endpoints",
+      "Monitor cost anomalies in real time with automated circuit breakers"
+    ],
+    "real_world_examples": [
+      "API key exposure leading to $80,000+ in unauthorized OpenAI API charges (multiple incidents, 2023-2024)",
+      "Prompt flooding attacks causing LLM service degradation for multi-tenant SaaS platforms (2024)"
+    ],
+    "references": [
+      "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+    ]
+  }
+]

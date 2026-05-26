@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>{{ title or "Threat Intelligence Brief" }}</h1>
+<div style="margin-bottom: 12px;"></div>
+
+{% if summary %}
+<div class="summary-box">{{ summary }}</div>
+{% endif %}
+
+<!-- Threat Actors -->
+{% if actors %}
+<div class="section">
+  <h2>Threat Actors Identified</h2>
+  <table>
+    <tr>
+      <th>Actor</th>
+      <th>Aliases</th>
+      <th>Attribution Confidence</th>
+    </tr>
+    {% for a in actors %}
+    <tr>
+      <td><strong>{{ a.name }}</strong></td>
+      <td>{{ (a.aliases or []) | join(", ") or "—" }}</td>
+      <td>{{ a.confidence or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Kill Chain Coverage -->
+{% if killchain_phases %}
+<div class="section">
+  <h2>Kill Chain Coverage</h2>
+  <div class="kc-grid">
+    {% for phase in ['Reconnaissance', 'Weaponization', 'Delivery', 'Exploitation', 'Installation', 'C2', 'Actions'] %}
+      {% set is_active = false %}
+      {% if phase == 'Reconnaissance' and ('reconnaissance' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'Weaponization' and ('weaponization' in killchain_phases or 'resource-development' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'Delivery' and ('delivery' in killchain_phases or 'initial-access' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'Exploitation' and ('exploitation' in killchain_phases or 'execution' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'Installation' and ('installation' in killchain_phases or 'persistence' in killchain_phases or 'privilege-escalation' in killchain_phases or 'defense-evasion' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'C2' and ('c2' in killchain_phases or 'command-and-control' in killchain_phases) %}
+        {% set is_active = true %}
+      {% elif phase == 'Actions' and ('actions' in killchain_phases or 'actions-on-objectives' in killchain_phases or 'impact' in killchain_phases or 'exfiltration' in killchain_phases) %}
+        {% set is_active = true %}
+      {% endif %}
+    <div class="kc-phase {% if is_active %}active{% endif %}">
+      <div class="kc-phase-name">{{ phase }}</div>
+      {% if is_active %}<div class="kc-count">&#10003;</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- TTPs (high-level) -->
+{% if ttps %}
+<div class="section">
+  <h2>Techniques Observed ({{ ttps | length }})</h2>
+  <div>
+    {% for t in ttps[:20] %}
+    <span class="badge badge-tech">{{ t.technique_id }}</span>
+    {% endfor %}
+    {% if ttps | length > 20 %}<span class="no-data">+{{ ttps | length - 20 }} more</span>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Business Impact -->
+{% if business_impact %}
+<div class="section">
+  <h2>Business Impact Assessment</h2>
+  <div class="two-col">
+    <div>
+      <h3>Financial Exposure</h3>
+      {% if business_impact.financial_range_usd %}
+      <p style="font-size:14pt; font-weight:bold; color:#e94560;">
+        ${{ "{:,}".format(business_impact.financial_range_usd[0]) }} –
+        ${{ "{:,}".format(business_impact.financial_range_usd[1]) }}
+      </p>
+      {% else %}
+      <p class="no-data">Not assessed</p>
+      {% endif %}
+
+      <h3 style="margin-top:10px">Operational Impact</h3>
+      <p>{{ business_impact.operational or "Not assessed" }}</p>
+    </div>
+    <div>
+      <h3>Regulatory Exposure</h3>
+      <p>{{ business_impact.regulatory or "Not assessed" }}</p>
+
+      {% if business_impact.recommended_board_actions %}
+      <h3 style="margin-top:10px">Recommended Board Actions</h3>
+      <ul style="list-style: none; padding-left: 0; margin-top: 6px;">
+        {% for action in business_impact.recommended_board_actions %}
+        <li style="margin-bottom: 6px; padding-left: 12px; text-indent: -12px;">&bull; {{ action }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Sectors & Geographies -->
+<div class="section">
+  <div class="two-col">
+    {% if sectors_targeted %}
+    <div>
+      <h2>Sectors Targeted</h2>
+      {% for s in sectors_targeted %}
+      <span class="badge badge-info">{{ s }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if geographies_targeted %}
+    <div>
+      <h2>Geographies Targeted</h2>
+      {% for g in geographies_targeted %}
+      <span class="badge badge-tactic">{{ g }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- IoC Count -->
+{% if ioc_count %}
+<div class="section">
+  <h2>Indicators of Compromise</h2>
+  <p><strong>{{ ioc_count }}</strong> indicators extracted. Full IoC list available in the Tactical report or via <code>GET /v1/iocs</code>.</p>
+</div>
+{% endif %}
+
+{% endblock %}

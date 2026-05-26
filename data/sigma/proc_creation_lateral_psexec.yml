@@ -1,0 +1,30 @@
+title: PsExec Remote Execution
+id: a9b0c1d2-e3f4-a5b6-c7d8-e9f0a1b2c3d4
+status: stable
+description: Detects execution of PsExec or PsExec-like tools for lateral movement between systems.
+references:
+    - https://attack.mitre.org/techniques/T1570/
+    - https://attack.mitre.org/techniques/T1021/
+author: Pythia Curated (adapted from SigmaHQ)
+date: 2024-01-01
+tags:
+    - attack.lateral_movement
+    - attack.t1570
+    - attack.t1021
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_image:
+        Image|endswith:
+            - '\psexec.exe'
+            - '\psexec64.exe'
+            - '\PsExec.exe'
+    selection_svc:
+        # PsExec installs a service named PSEXESVC
+        ServiceName: 'PSEXESVC'
+    condition: 1 of selection_*
+falsepositives:
+    - Legitimate IT administration using SysInternals PsExec
+    - Authorized penetration testing
+level: high

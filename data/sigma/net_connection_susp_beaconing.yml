@@ -1,0 +1,33 @@
+title: Suspicious Beaconing Interval to Single External Host
+id: a3b4c5d6-e7f8-a9b0-c1d2-e3f4a5b6c7d8
+status: experimental
+description: Detects repeated network connections to a single external host at regular intervals, indicative of C2 beaconing behavior.
+references:
+    - https://attack.mitre.org/techniques/T1071/001/
+author: Pythia Curated
+date: 2024-01-01
+tags:
+    - attack.command_and_control
+    - attack.t1071.001
+logsource:
+    category: network_connection
+    product: windows
+detection:
+    selection:
+        Initiated: 'true'
+        DestinationPort:
+            - 80
+            - 443
+            - 8080
+            - 8443
+    filter_known_good:
+        DestinationHostname|contains:
+            - 'microsoft.com'
+            - 'windows.com'
+            - 'windowsupdate.com'
+            - 'google.com'
+    condition: selection and not filter_known_good
+falsepositives:
+    - Legitimate software update mechanisms
+    - Business applications with regular check-ins
+level: low

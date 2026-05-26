@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>{{ title or "Threat Intelligence Report" }}</h1>
+<p style="color:#888; font-size:9pt; margin-bottom:12px;">Tactical Analysis Report — Analyst Use Only</p>
+
+{% if summary %}
+<div class="summary-box">{{ summary }}</div>
+{% endif %}
+
+<!-- Actors -->
+{% if actors %}
+<div class="section">
+  <h2>Threat Actor Profiles ({{ actors | length }})</h2>
+  {% for a in actors %}
+  <div style="border:1px solid #eee; padding:8px; margin-bottom:8px; border-radius:3px;">
+    <strong style="font-size:11pt;">{{ a.name }}</strong>
+    <span class="badge badge-info" style="float:right;">Confidence: {{ a.confidence or "—" }}</span>
+    <br>
+    {% if a.aliases %}<p style="margin-top:4px;"><em>AKA:</em> {{ a.aliases | join(", ") }}</p>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- TTPs -->
+{% if ttps %}
+<div class="section">
+  <h2>MITRE ATT&amp;CK Techniques ({{ ttps | length }})</h2>
+  <table>
+    <tr>
+      <th style="width:12%">ID</th>
+      <th style="width:30%">Name</th>
+      <th style="width:58%">Evidence / Use Note</th>
+    </tr>
+    {% for t in ttps %}
+    <tr>
+      <td><code>{{ t.technique_id }}</code></td>
+      <td>{{ t.name or "—" }}</td>
+      <td style="font-size:8pt;">{{ t.evidence or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- IoCs -->
+{% if iocs %}
+<div class="section">
+  <h2>Indicators of Compromise ({{ iocs | length }})</h2>
+  <table>
+    <tr>
+      <th style="width:12%">Type</th>
+      <th style="width:40%">Value</th>
+      <th style="width:48%">Context</th>
+    </tr>
+    {% for i in iocs %}
+    <tr>
+      <td><span class="badge badge-tactic">{{ i.type }}</span></td>
+      <td><code>{{ i.value }}</code></td>
+      <td style="font-size:8pt;">{{ i.context or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- CVEs -->
+{% if cves %}
+<div class="section">
+  <h2>Referenced CVEs ({{ cves | length }})</h2>
+  <table>
+    <tr>
+      <th style="width:18%">CVE ID</th>
+      <th>Context</th>
+    </tr>
+    {% for c in cves %}
+    <tr>
+      <td><code>{{ c.id }}</code></td>
+      <td style="font-size:8pt;">{{ c.context or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Kill Chain Summary -->
+{% if killchain_phases %}
+<div class="section">
+  <h2>Kill Chain Phases Observed</h2>
+  {% for phase in killchain_phases %}
+  <span class="badge badge-tactic">{{ phase }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ATLAS Techniques -->
+{% if atlas_techniques %}
+<div class="section">
+  <h2>MITRE ATLAS Techniques (AI/ML)</h2>
+  {% for t in atlas_techniques %}
+  <span class="badge badge-info">{{ t }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- OWASP LLM -->
+{% if owasp_llm %}
+<div class="section">
+  <h2>OWASP LLM Top 10 References</h2>
+  {% for item in owasp_llm %}
+  <span class="badge badge-medium">{{ item }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Admiralyty Confidence -->
+<div class="section">
+  <h2>Source Reliability Assessment</h2>
+  <p>
+    Admiralty code: <strong>{{ admiralty }}</strong> —
+    {% if admiralty[0] == 'A' %}Reliable source{% elif admiralty[0] == 'B' %}Usually reliable{% elif admiralty[0] == 'C' %}Fairly reliable{% elif admiralty[0] == 'D' %}Not usually reliable{% else %}Reliability unknown{% endif %},
+    {% if admiralty[1] == '1' %}confirmed by other sources{% elif admiralty[1] == '2' %}probably true{% elif admiralty[1] == '3' %}possibly true{% elif admiralty[1] == '4' %}doubtful{% else %}truth cannot be judged{% endif %}.
+  </p>
+</div>
+
+<!-- Sectors & Geographies -->
+<div class="section">
+  <div class="two-col">
+    {% if sectors_targeted %}
+    <div>
+      <h2>Sectors Targeted</h2>
+      {% for s in sectors_targeted %}
+      <span class="badge badge-info">{{ s }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if geographies_targeted %}
+    <div>
+      <h2>Geographies Targeted</h2>
+      {% for g in geographies_targeted %}
+      <span class="badge badge-tactic">{{ g }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Raw source URL -->
+{% if source_url %}
+<div class="section">
+  <h2>Source Reference</h2>
+  <p><a href="{{ source_url }}">{{ source_url }}</a></p>
+</div>
+{% endif %}
+
+{% endblock %}
