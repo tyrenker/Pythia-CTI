@@ -1,12 +1,12 @@
 <div align="center">
 
 ```
-  _____  __   __ _______ _    _ _____          
- |  __ \ \ \ / /|__   __| |  | |_   _|   /\   
- | |__) | \ V /    | |  | |__| | | |    /  \  
- |  ___/   > <     | |  |  __  | | |   / /\ \ 
- | |       / . \   | |  | |  | |_| |_ / ____ \
- |_|      /_/ \_\  |_|  |_|  |_|_____/_/    \_\
+ _____  __   __ _______ _    _ _____          
+|  __ \ \ \ / /|__   __| |  | |_   _|   /\   
+| |__) | \ V /    | |  | |__| | | |    /  \  
+|  ___/   | |     | |  |  __  | | |   / /\ \ 
+| |       | |     | |  | |  | |_| |_ / ____ \
+|_|       |_|     |_|  |_|  |_|_____/_/    \_\
 ```
 
 **Oracle-grade threat intelligence, served as an API.**
@@ -108,7 +108,7 @@ pythia sync attck misp-galaxy kev   # selective refresh
 
 ```bash
 # 1. Clone
-git clone https://github.com/tyrenker/pythia.git
+git clone https://github.com/tyrenker/Pythia-CTI.git
 cd pythia
 
 # 2. Configure
@@ -171,6 +171,7 @@ pip install -e ".[dev]"
 pythia init-db
 pythia sync          # seed from public sources (~60s)
 pythia serve --reload
+```
 
 ---
 
