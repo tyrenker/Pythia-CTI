@@ -45,11 +45,14 @@ def start_scheduler() -> None:
     _scheduler.add_job(lambda: _run_seed_fn("seed_phishtank"), "cron", hour=3,  minute=30, id="phishtank")
 
     # Weekly feeds (Sunday early morning)
-    _scheduler.add_job(lambda: _run_seed_fn("seed_apt_sheet"),      "cron", day_of_week="sun", hour=4, id="apt_sheet")
-    _scheduler.add_job(lambda: _run_seed_fn("seed_malpedia"),        "cron", day_of_week="sun", hour=5, id="malpedia")
-    _scheduler.add_job(lambda: _run_seed_fn("seed_yara_rules"),      "cron", day_of_week="sun", hour=6, id="yara_rules")
-    _scheduler.add_job(lambda: _run_seed_fn("seed_icewater"),        "cron", day_of_week="sun", hour=7, id="icewater")
-    _scheduler.add_job(lambda: _run_seed_fn("seed_signature_base"),  "cron", day_of_week="sun", hour=8, id="signature_base")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_apt_sheet"),            "cron", day_of_week="sun", hour=4, id="apt_sheet")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_malpedia"),              "cron", day_of_week="sun", hour=5, id="malpedia")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_yara_rules"),            "cron", day_of_week="sun", hour=6, id="yara_rules")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_icewater"),              "cron", day_of_week="sun", hour=7, id="icewater")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_signature_base"),        "cron", day_of_week="sun", hour=8, id="signature_base")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_otx_actors"),            "cron", day_of_week="sun", hour=9, id="otx")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_claude_ttp_inference"),  "cron", day_of_week="sun", hour=10, id="claude_ttp")
+    _scheduler.add_job(lambda: _run_seed_fn("seed_sophistication"),        "cron", day_of_week="sun", hour=11, id="sophistication")
 
     _scheduler.start()
 
