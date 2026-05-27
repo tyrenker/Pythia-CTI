@@ -68,7 +68,7 @@ export function Actors() {
       key: 'ttps',
       header: 'Techniques',
       render: (a: ActorSummary) => (
-        <span className="text-text-muted">{a.sophistication ?? 0} TTP(s)</span>
+        <span className="text-text-muted">{a.ttp_count} TTP(s)</span>
       ),
     },
     {
@@ -76,13 +76,15 @@ export function Actors() {
       header: 'Sophistication',
       sortable: true,
       render: (a: ActorSummary) => {
-        if (!a.sophistication) return <span className="text-text-muted">—</span>
+        if (a.sophistication == null) return <span className="text-text-muted">—</span>
+        // Score is 1-10; map to 5 dots by dividing by 2
+        const filled = Math.round(a.sophistication / 2)
         return (
-          <span className="flex gap-0.5">
+          <span className="flex gap-0.5" title={`${a.sophistication}/10`}>
             {[1, 2, 3, 4, 5].map(n => (
               <span
                 key={n}
-                className={n <= a.sophistication! ? 'text-accent-bright' : 'text-[#2a2a3e]'}
+                className={n <= filled ? 'text-accent-bright' : 'text-[#2a2a3e]'}
               >
                 ●
               </span>

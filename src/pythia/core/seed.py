@@ -22,7 +22,7 @@ import re
 import tempfile
 import urllib.request
 import zipfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,22 +35,26 @@ from pythia.models.malware import MalwareFamily
 from pythia.models.owasp_llm import OwaspLlmItem
 from pythia.models.rule import DetectionRule
 
+
 def _log_sync_status(session: Any, source: str, status: str, dry_run: bool) -> None:
     if dry_run:
         return
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from pythia.models.sync_log import SyncLog
+
     db_source = source.replace("-", "_")
     try:
         log = session.get(SyncLog, db_source)
         if not log:
             log = SyncLog(source=db_source)
             session.add(log)
-        log.last_run = datetime.now(timezone.utc)
+        log.last_run = datetime.now(UTC)
         log.status = status
         session.commit()
     except Exception as e:
         print(f"  Warning: failed to write sync log for {source}: {e}")
+
 
 _DATA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data"
 
@@ -116,7 +120,7 @@ def _fetch_optional(urls: list[str], label: str) -> Any | None:
             return _fetch(url, label)
         except Exception:
             continue
-    print(f"skipped (unavailable)")
+    print("skipped (unavailable)")
     return None
 
 
@@ -140,10 +144,16 @@ def seed_misp_galaxy(session: Any, dry_run: bool) -> int:
         meta: dict = entry.get("meta", {})
         aliases: list[str] = meta.get("synonyms", []) or meta.get("aliases", [])
         country_codes: list[str] = meta.get("country", [])
-        country_code = country_codes[0] if isinstance(country_codes, list) and country_codes else (country_codes if isinstance(country_codes, str) else None)
+        country_code = (
+            country_codes[0]
+            if isinstance(country_codes, list) and country_codes
+            else (country_codes if isinstance(country_codes, str) else None)
+        )
         refs: list[str] = meta.get("refs", [])
-        motivations: list[str] = meta.get("motivation", []) if isinstance(meta.get("motivation"), list) else (
-            [meta["motivation"]] if meta.get("motivation") else []
+        motivations: list[str] = (
+            meta.get("motivation", [])
+            if isinstance(meta.get("motivation"), list)
+            else ([meta["motivation"]] if meta.get("motivation") else [])
         )
         description: str = entry.get("description", "")
         attck_ids: list[str] = meta.get("mitre-attack-id", []) or []
@@ -203,14 +213,19 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
 
     # ── techniques ──────────────────────────────────────────────────────────
     technique_objects = [
-        o for o in objects
+        o
+        for o in objects
         if o.get("type") == "attack-pattern" and not o.get("x_mitre_deprecated", False)
     ]
     # Parents first so FK constraint is satisfied when subtechniques insert.
     technique_objects = sorted(
         technique_objects,
         key=lambda o: next(
-            (r["external_id"] for r in o.get("external_references", []) if r.get("source_name") == "mitre-attack"),
+            (
+                r["external_id"]
+                for r in o.get("external_references", [])
+                if r.get("source_name") == "mitre-attack"
+            ),
             "",
         ),
     )
@@ -240,40 +255,54 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
 
         existing = session.get(AttckTechnique, technique_id)
         if not existing:
-            session.add(AttckTechnique(
-                technique_id=technique_id,
-                name=name,
-                description=description or None,
-                tactics=tactics,
-                is_subtechnique=is_sub,
-                parent_id=parent_id,
-                domain=domain,
-                detection_note=detection,
-                platforms=platforms,
-                data_sources=data_sources,
-                mitigations=[],
-                source_url=url,
-            ))
+            session.add(
+                AttckTechnique(
+                    technique_id=technique_id,
+                    name=name,
+                    description=description or None,
+                    tactics=tactics,
+                    is_subtechnique=is_sub,
+                    parent_id=parent_id,
+                    domain=domain,
+                    detection_note=detection,
+                    platforms=platforms,
+                    data_sources=data_sources,
+                    mitigations=[],
+                    source_url=url,
+                )
+            )
 
     if not dry_run:
         session.flush()  # ensure techniques exist before group mappings
 
     # ── groups → actor merge + TTP mappings ─────────────────────────────────
     group_objects = [
-        o for o in objects
+        o
+        for o in objects
         if o.get("type") == "intrusion-set" and not o.get("x_mitre_deprecated", False)
     ]
 
     # uses relationships: source_ref=intrusion-set, target_ref=attack-pattern
     use_rels = [
-        o for o in objects
-        if o.get("type") == "relationship" and o.get("relationship_type") == "uses"
+        o
+        for o in objects
+        if o.get("type") == "relationship"
+        and o.get("relationship_type") == "uses"
         and o.get("source_ref", "").startswith("intrusion-set--")
         and o.get("target_ref", "").startswith("attack-pattern--")
     ]
     uses_by_group: dict[str, list[dict]] = {}
     for rel in use_rels:
         uses_by_group.setdefault(rel["source_ref"], []).append(rel)
+
+    # Build in-memory indexes so alias lookups don't require per-group DB queries.
+    actors_by_name: dict[str, ThreatActor] = {}
+    actors_by_alias: dict[str, ThreatActor] = {}
+    if not dry_run:
+        for _a in session.query(ThreatActor).all():
+            actors_by_name[_a.name.lower()] = _a
+            for _al in _a.aliases or []:
+                actors_by_alias[_al.lower()] = _a
 
     mappings_added = 0
     for group in group_objects:
@@ -293,11 +322,18 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
         if dry_run:
             continue
 
-        # Find or create actor record (prefer matching by attck_group_id, then name)
-        actor = (
+        # Match: ATT&CK ID → canonical name → group name in actor aliases → ATT&CK aliases
+        actor: ThreatActor | None = (
             session.query(ThreatActor).filter_by(attck_group_id=group_attck_id).first()
-            or session.query(ThreatActor).filter_by(name=group_name).first()
+            or actors_by_name.get(group_name.lower())
+            or actors_by_alias.get(group_name.lower())
         )
+        if not actor:
+            for _alias in aliases:
+                actor = actors_by_name.get(_alias.lower()) or actors_by_alias.get(_alias.lower())
+                if actor:
+                    break
+
         if actor:
             # Enrich existing (MISP) record with ATT&CK data
             if not actor.attck_group_id:
@@ -308,11 +344,6 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
                 if alias not in actor.aliases:
                     actor.aliases = actor.aliases + [alias]
         else:
-            sectors_raw = [
-                r.get("description", "")
-                for r in ext
-                if r.get("source_name") == "mitre-attack"
-            ]
             actor = ThreatActor(
                 name=group_name,
                 aliases=aliases,
@@ -330,6 +361,9 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
             )
             session.add(actor)
             session.flush()
+            actors_by_name[actor.name.lower()] = actor
+            for _al in actor.aliases or []:
+                actors_by_alias[_al.lower()] = actor
 
         # Add TTP mappings for this group
         existing_techs = {m.technique_id for m in actor.ttp_mappings}
@@ -343,18 +377,22 @@ def seed_attck(session: Any, domain: str, dry_run: bool) -> int:
                 continue
             tech_id = t_ref["external_id"]
             if tech_id not in existing_techs:
-                session.add(ActorTTPMapping(
-                    actor_id=actor.id,
-                    technique_id=tech_id,
-                    use_note=rel.get("description"),
-                    source="attck",
-                ))
+                session.add(
+                    ActorTTPMapping(
+                        actor_id=actor.id,
+                        technique_id=tech_id,
+                        use_note=rel.get("description"),
+                        source="attck",
+                    )
+                )
                 existing_techs.add(tech_id)
                 mappings_added += 1
 
     if not dry_run:
         session.commit()
-    print(f"  ATT&CK {domain}: {len(technique_objects)} techniques, {len(group_objects)} groups, {mappings_added} TTP mappings")
+    print(
+        f"  ATT&CK {domain}: {len(technique_objects)} techniques, {len(group_objects)} groups, {mappings_added} TTP mappings"
+    )
     _log_sync_status(session, "attck", "ok", dry_run)
     return len(technique_objects) + len(group_objects)
 
@@ -385,16 +423,18 @@ def seed_atlas(session: Any, dry_run: bool) -> int:
                 continue
 
             if not session.get(AtlasTechnique, tech_id):
-                session.add(AtlasTechnique(
-                    technique_id=tech_id,
-                    name=name,
-                    description=description or None,
-                    tactics=tactics,
-                    subtechniques=sub_ids,
-                    mitigations=[],
-                    case_study_refs=[],
-                    source_url="https://atlas.mitre.org/techniques/" + tech_id,
-                ))
+                session.add(
+                    AtlasTechnique(
+                        technique_id=tech_id,
+                        name=name,
+                        description=description or None,
+                        tactics=tactics,
+                        subtechniques=sub_ids,
+                        mitigations=[],
+                        case_study_refs=[],
+                        source_url="https://atlas.mitre.org/techniques/" + tech_id,
+                    )
+                )
                 added += 1
 
     if not dry_run:
@@ -423,16 +463,18 @@ def seed_kev(session: Any, dry_run: bool) -> int:
 
         existing = session.query(IoC).filter_by(type="cve", value=cve_id).first()
         if not existing:
-            session.add(IoC(
-                type="cve",
-                value=cve_id,
-                context=context,
-                confidence_source="A",
-                confidence_info="1",
-                tlp="WHITE",
-                pyramid_tier="artifact",
-                source_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-            ))
+            session.add(
+                IoC(
+                    type="cve",
+                    value=cve_id,
+                    context=context,
+                    confidence_source="A",
+                    confidence_info="1",
+                    tlp="WHITE",
+                    pyramid_tier="artifact",
+                    source_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -453,16 +495,16 @@ def seed_sigma(session: Any, dry_run: bool) -> int:
     for path in rule_files:
         content = path.read_text(encoding="utf-8")
         # Extract key fields with lightweight regex — avoids pulling in PyYAML as a hard dep
-        title_m = re.search(r'^title:\s*(.+)$', content, re.MULTILINE)
+        title_m = re.search(r"^title:\s*(.+)$", content, re.MULTILINE)
         title = title_m.group(1).strip() if title_m else path.stem
-        level_m = re.search(r'^level:\s*(\S+)', content, re.MULTILINE)
+        level_m = re.search(r"^level:\s*(\S+)", content, re.MULTILINE)
         level = level_m.group(1).strip() if level_m else None
-        status_m = re.search(r'^status:\s*(\S+)', content, re.MULTILINE)
+        status_m = re.search(r"^status:\s*(\S+)", content, re.MULTILINE)
         rule_status = status_m.group(1).strip() if status_m else None
         # Pull ATT&CK technique IDs from tags: attack.tXXXX
         technique_ids = [
             m.upper().replace(".", ".")
-            for m in re.findall(r'attack\.(t\d{4}(?:\.\d{3})?)', content, re.IGNORECASE)
+            for m in re.findall(r"attack\.(t\d{4}(?:\.\d{3})?)", content, re.IGNORECASE)
         ]
         technique_ids = list(dict.fromkeys(technique_ids))  # dedup, preserve order
 
@@ -472,16 +514,18 @@ def seed_sigma(session: Any, dry_run: bool) -> int:
 
         existing = session.query(DetectionRule).filter_by(title=title, rule_type="sigma").first()
         if not existing:
-            session.add(DetectionRule(
-                rule_type="sigma",
-                title=title,
-                content=content,
-                technique_ids=technique_ids,
-                actor_ids=[],
-                severity=level,
-                status=rule_status,
-                source_url="https://github.com/SigmaHQ/sigma",
-            ))
+            session.add(
+                DetectionRule(
+                    rule_type="sigma",
+                    title=title,
+                    content=content,
+                    technique_ids=technique_ids,
+                    actor_ids=[],
+                    severity=level,
+                    status=rule_status,
+                    source_url="https://github.com/SigmaHQ/sigma",
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -504,19 +548,21 @@ def seed_owasp(session: Any, dry_run: bool) -> int:
             added += 1
             continue
         if not session.get(OwaspLlmItem, item["item_id"]):
-            session.add(OwaspLlmItem(
-                item_id=item["item_id"],
-                rank=item["rank"],
-                name=item["name"],
-                description=item.get("description"),
-                impact=item.get("impact"),
-                detection_notes=item.get("detection_notes"),
-                atlas_mappings=item.get("atlas_mappings", []),
-                cwe_ids=item.get("cwe_ids", []),
-                mitigations=item.get("mitigations", []),
-                real_world_examples=item.get("real_world_examples", []),
-                references=item.get("references", []),
-            ))
+            session.add(
+                OwaspLlmItem(
+                    item_id=item["item_id"],
+                    rank=item["rank"],
+                    name=item["name"],
+                    description=item.get("description"),
+                    impact=item.get("impact"),
+                    detection_notes=item.get("detection_notes"),
+                    atlas_mappings=item.get("atlas_mappings", []),
+                    cwe_ids=item.get("cwe_ids", []),
+                    mitigations=item.get("mitigations", []),
+                    real_world_examples=item.get("real_world_examples", []),
+                    references=item.get("references", []),
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -531,9 +577,24 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
     total_enriched = 0
 
     alias_keywords = [
-        "name", "alias", "crowdstrike", "irl", "kaspersky", "secureworks", 
-        "mandiant", "fireeye", "symantec", "isight", "cisco", "talos", 
-        "palo alto", "unit 42", "unit42", "dell secure works", "talos group", "nsa"
+        "name",
+        "alias",
+        "crowdstrike",
+        "irl",
+        "kaspersky",
+        "secureworks",
+        "mandiant",
+        "fireeye",
+        "symantec",
+        "isight",
+        "cisco",
+        "talos",
+        "palo alto",
+        "unit 42",
+        "unit42",
+        "dell secure works",
+        "talos group",
+        "nsa",
     ]
 
     # In-memory indexes to prevent duplicate objects/unique constraint violations across sheets
@@ -547,18 +608,15 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
             existing_actors_by_name[a.name.lower()] = a
             if a.attck_group_id:
                 existing_actors_by_mitre[a.attck_group_id] = a
-            for alias in (a.aliases or []):
+            for alias in a.aliases or []:
                 existing_actors_by_alias[alias.lower()] = a
 
     for tab_name, (gid, country_code, default_sponsor) in APT_TABS.items():
         url = SOURCES["apt-sheet"].format(gid=gid)
-        req = urllib.request.Request(
-            url,
-            headers={'User-Agent': 'Pythia/0.1 (seed-builder)'}
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Pythia/0.1 (seed-builder)"})
         try:
             with urllib.request.urlopen(req, timeout=30) as response:
-                content = response.read().decode('utf-8')
+                content = response.read().decode("utf-8")
                 csv_file = io.StringIO(content)
                 reader = csv.reader(csv_file)
                 rows = list(reader)
@@ -600,28 +658,35 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
             if not row or not row[0].strip() or row[0].strip() == "Common Name":
                 continue
 
-            common_name = re.sub(r'\s+Group$', '', row[0].strip()).strip()
+            common_name = re.sub(r"\s+Group$", "", row[0].strip()).strip()
 
             aliases = []
             for col_idx in alias_cols:
                 if col_idx < len(row):
                     val = row[col_idx].strip()
-                    if val and val.lower() != "n/a" and val.lower() != "none" and val != common_name:
-                        parts = [p.strip() for p in re.split(r'[,/]', val)]
+                    if (
+                        val
+                        and val.lower() != "n/a"
+                        and val.lower() != "none"
+                        and val != common_name
+                    ):
+                        parts = [p.strip() for p in re.split(r"[,/]", val)]
                         for p in parts:
-                            p_clean = re.sub(r'\s*\([^)]*\)', '', p).strip()
+                            p_clean = re.sub(r"\s*\([^)]*\)", "", p).strip()
                             if p_clean and p_clean not in aliases and p_clean != common_name:
                                 aliases.append(p_clean)
 
             mitre_id = None
             if mitre_idx != -1 and mitre_idx < len(row):
                 mitre_val = row[mitre_idx].strip()
-                m = re.search(r'G\d{4}', mitre_val)
+                m = re.search(r"G\d{4}", mitre_val)
                 if m:
                     mitre_id = m.group(0)
 
             mo_val = row[mo_idx].strip() if mo_idx != -1 and mo_idx < len(row) else ""
-            comment_val = row[comment_idx].strip() if comment_idx != -1 and comment_idx < len(row) else ""
+            comment_val = (
+                row[comment_idx].strip() if comment_idx != -1 and comment_idx < len(row) else ""
+            )
             desc_parts = []
             if mo_val and mo_val.lower() != "n/a":
                 desc_parts.append(mo_val)
@@ -633,7 +698,7 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
             if targets_idx != -1 and targets_idx < len(row):
                 target_val = row[targets_idx].strip()
                 if target_val and target_val.lower() != "n/a":
-                    sectors = [t.strip() for t in re.split(r'[,;•\n]', target_val) if t.strip()]
+                    sectors = [t.strip() for t in re.split(r"[,;•\n]", target_val) if t.strip()]
 
             links = []
             for col_idx in link_cols:
@@ -645,7 +710,9 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
                 if cell.strip().startswith("http") and cell.strip() not in links:
                     links.append(cell.strip())
 
-            combined_text = f"{common_name} {' '.join(aliases)} {description or ''} {' '.join(sectors)}"
+            combined_text = (
+                f"{common_name} {' '.join(aliases)} {description or ''} {' '.join(sectors)}"
+            )
             sponsor_type = _infer_sponsor(combined_text, default_sponsor)
 
             if dry_run:
@@ -670,11 +737,18 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
                 existing.aliases = list(existing_aliases)
 
                 if description and description not in (existing.description or ""):
-                    existing.description = f"{existing.description}\n\n{description}" if existing.description else description
+                    existing.description = (
+                        f"{existing.description}\n\n{description}"
+                        if existing.description
+                        else description
+                    )
 
                 existing_sectors = set(existing.sectors_targeted or [])
                 for s in sectors:
-                    if len(s) < 50 and not any(c.lower() in s.lower() for c in ["korea", "china", "vietnam", "russia", "usa", "europe", "japan"]):
+                    if len(s) < 50 and not any(
+                        c.lower() in s.lower()
+                        for c in ["korea", "china", "vietnam", "russia", "usa", "europe", "japan"]
+                    ):
                         existing_sectors.add(s)
                 existing.sectors_targeted = list(existing_sectors)
 
@@ -692,7 +766,15 @@ def seed_apt_sheet(session: Any, dry_run: bool) -> int:
 
                 total_enriched += 1
             else:
-                clean_sectors = [s for s in sectors if len(s) < 50 and not any(c.lower() in s.lower() for c in ["korea", "china", "vietnam", "russia", "usa", "europe", "japan"])]
+                clean_sectors = [
+                    s
+                    for s in sectors
+                    if len(s) < 50
+                    and not any(
+                        c.lower() in s.lower()
+                        for c in ["korea", "china", "vietnam", "russia", "usa", "europe", "japan"]
+                    )
+                ]
                 actor = ThreatActor(
                     name=common_name,
                     aliases=aliases,
@@ -732,22 +814,19 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
         "url": "https://threatfox.abuse.ch/export/csv/urls/recent/",
         "hash": "https://threatfox.abuse.ch/export/csv/sha256/recent/",
     }
-    
+
     total_added = 0
 
     for ioc_type, url in feeds.items():
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Pythia/0.1 (seed-builder)"}
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Pythia/0.1 (seed-builder)"})
         try:
             with urllib.request.urlopen(req, timeout=30) as response:
-                content = response.read().decode('utf-8')
+                content = response.read().decode("utf-8")
         except Exception as e:
             print(f"  abuse.ch ThreatFox [{ioc_type}]: download failed ({e}) — skipping")
             continue
 
-        csv_lines = [line for line in content.splitlines() if not line.startswith('#')]
+        csv_lines = [line for line in content.splitlines() if not line.startswith("#")]
         csv_file = io.StringIO("\n".join(csv_lines))
         reader = csv.reader(csv_file)
         rows = list(reader)
@@ -801,7 +880,11 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
                 confidence_source = "C"
 
             context = f"ThreatFox indicators of {malware_printable} ({threat_type})."
-            source_url = reference if reference and reference.lower() != "none" else "https://threatfox.abuse.ch"
+            source_url = (
+                reference
+                if reference and reference.lower() != "none"
+                else "https://threatfox.abuse.ch"
+            )
 
             if dry_run:
                 added += 1
@@ -809,18 +892,20 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
 
             existing = session.query(IoC).filter_by(type=mapped_type, value=ioc_val).first()
             if not existing:
-                session.add(IoC(
-                    type=mapped_type,
-                    value=ioc_val,
-                    first_seen=first_seen,
-                    last_seen=first_seen,
-                    confidence_source=confidence_source,
-                    confidence_info="2",
-                    tlp="WHITE",
-                    pyramid_tier=pyramid_tier,
-                    context=context,
-                    source_url=source_url,
-                ))
+                session.add(
+                    IoC(
+                        type=mapped_type,
+                        value=ioc_val,
+                        first_seen=first_seen,
+                        last_seen=first_seen,
+                        confidence_source=confidence_source,
+                        confidence_info="2",
+                        tlp="WHITE",
+                        pyramid_tier=pyramid_tier,
+                        context=context,
+                        source_url=source_url,
+                    )
+                )
                 added += 1
         if not dry_run:
             session.commit()
@@ -831,9 +916,302 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
     return total_added
 
 
+def seed_sophistication(session: Any, dry_run: bool) -> int:
+    """Compute and persist heuristic sophistication scores for all threat actors.
+
+    Uses TTP count, tactic breadth, sponsor type, and name signals.  Safe to
+    re-run; only writes when the computed score differs from what is stored.
+    """
+    from sqlalchemy import text
+
+    from pythia.ingestion.enrichment import compute_sophistication
+
+    # Single join to fetch all actor→tactics data efficiently
+    rows = session.execute(text("""
+        SELECT m.actor_id, at.tactics
+        FROM actor_ttp_mappings m
+        LEFT JOIN attck_techniques at ON at.technique_id = m.technique_id
+    """)).fetchall()
+
+    actor_tactics: dict[str, set[str]] = {}
+    for actor_id, tactics_val in rows:
+        if tactics_val:
+            tactics = (
+                tactics_val
+                if isinstance(tactics_val, list)
+                else json.loads(tactics_val)
+            )
+            actor_tactics.setdefault(actor_id, set()).update(tactics)
+
+    # Pre-compute TTP counts to avoid N queries
+    count_rows = session.execute(text(
+        "SELECT actor_id, COUNT(*) FROM actor_ttp_mappings GROUP BY actor_id"
+    )).fetchall()
+    ttp_counts: dict[str, int] = {r[0]: r[1] for r in count_rows}
+
+    updated = 0
+    actors = session.query(ThreatActor).all()
+    for actor in actors:
+        score = compute_sophistication(
+            sponsor_type=actor.sponsor_type,
+            name=actor.name,
+            ttp_count=ttp_counts.get(actor.id, 0),
+            covered_tactics=actor_tactics.get(actor.id, set()),
+        )
+        if actor.sophistication != score:
+            if not dry_run:
+                actor.sophistication = score
+            updated += 1
+
+    if not dry_run:
+        session.commit()
+    print(f"  Sophistication scoring: {updated}/{len(actors)} actors scored/updated")
+    _log_sync_status(session, "sophistication", "ok", dry_run)
+    return updated
+
+
+def seed_otx_actors(session: Any, dry_run: bool) -> int:
+    """Fetch ATT&CK technique mappings from AlienVault OTX adversary-tagged pulses.
+
+    Requires OTX_API_KEY.  For each OTX pulse that names a known adversary and
+    includes MITRE ATT&CK tags, TTP mappings are added to the matching actor.
+    """
+    from pythia.core.config import get_settings
+    settings = get_settings()
+    api_key = settings.otx_api_key
+    if not api_key:
+        print("  OTX: no OTX_API_KEY set — skipping")
+        _log_sync_status(session, "otx", "no_key", dry_run)
+        return 0
+
+    base = "https://otx.alienvault.com/api/v1"
+    headers = {"X-OTX-API-KEY": api_key, "User-Agent": "Pythia/0.1 (seed-builder)"}
+    tech_re = re.compile(r"^T\d{4}(?:\.\d{3})?$")
+
+    # Build actor lookup: name (lower) → ThreatActor
+    actors_by_name: dict[str, ThreatActor] = {}
+    actors_by_alias: dict[str, ThreatActor] = {}
+    if not dry_run:
+        for a in session.query(ThreatActor).all():
+            actors_by_name[a.name.lower()] = a
+            for al in (a.aliases or []):
+                actors_by_alias[al.lower()] = a
+
+    def _find_actor(name: str) -> ThreatActor | None:
+        n = name.lower()
+        return actors_by_name.get(n) or actors_by_alias.get(n)
+
+    def _get_json(url: str) -> Any | None:
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read())
+        except Exception as exc:
+            print(f"  OTX request failed ({exc})")
+            return None
+
+    # Paginate through subscribed pulses
+    page_url = f"{base}/pulses/subscribed?limit=100&include_referenced=false"
+    total_mappings = 0
+    pages_fetched = 0
+    max_pages = 20  # cap to avoid rate limiting on initial seed
+
+    print("  OTX: fetching adversary-tagged pulses...", end=" ", flush=True)
+    while page_url and pages_fetched < max_pages:
+        data = _get_json(page_url)
+        if not data:
+            break
+        results = data.get("results", [])
+        pages_fetched += 1
+
+        for pulse in results:
+            adversary: str = (pulse.get("adversary") or "").strip()
+            if not adversary:
+                continue
+
+            # Extract ATT&CK technique IDs from pulse tags
+            tags: list[str] = pulse.get("tags", []) or []
+            attack_ids: list[str] = pulse.get("attack_ids", []) or []
+            tech_ids = [
+                t for t in attack_ids + tags if tech_re.match(t.strip())
+            ]
+            if not tech_ids:
+                continue
+
+            if dry_run:
+                total_mappings += len(tech_ids)
+                continue
+
+            actor = _find_actor(adversary)
+            if not actor:
+                continue
+
+            existing = {m.technique_id for m in actor.ttp_mappings}
+            for tid in tech_ids:
+                tid = tid.strip()
+                if tid not in existing:
+                    session.add(ActorTTPMapping(
+                        actor_id=actor.id,
+                        technique_id=tid,
+                        use_note=None,
+                        source="otx",
+                    ))
+                    existing.add(tid)
+                    total_mappings += 1
+
+        next_url = data.get("next")
+        page_url = next_url if next_url else None
+
+    if not dry_run:
+        session.commit()
+    print(f"done — {total_mappings} TTP mappings added across {pages_fetched} pages")
+    _log_sync_status(session, "otx", "ok", dry_run)
+    return total_mappings
+
+
+def seed_claude_ttp_inference(session: Any, dry_run: bool) -> int:
+    """Use Claude to infer ATT&CK technique IDs for actors with descriptions but no TTPs.
+
+    Requires ANTHROPIC_API_KEY.  Processes up to 50 actors per run to stay within
+    API cost limits.  Only targets actors with a description and zero existing TTP
+    mappings (excluding those with attck_group_id already covered by the ATT&CK seed).
+    """
+    from pythia.core.config import get_settings
+    from pythia.ingestion.enrichment import infer_ttps_from_description
+    settings = get_settings()
+    if not settings.anthropic_api_key:
+        print("  Claude TTP inference: no ANTHROPIC_API_KEY set — skipping")
+        _log_sync_status(session, "claude_ttp", "no_key", dry_run)
+        return 0
+
+    # Actors with a description but no TTP mappings and no ATT&CK group coverage
+    candidates = (
+        session.query(ThreatActor)
+        .filter(ThreatActor.description.isnot(None))
+        .filter(ThreatActor.attck_group_id.is_(None))
+        .filter(~ThreatActor.ttp_mappings.any())
+        .limit(50)
+        .all()
+    )
+
+    if not candidates:
+        print("  Claude TTP inference: no eligible actors found — skipping")
+        return 0
+
+    print(f"  Claude TTP inference: inferring TTPs for {len(candidates)} actors...", end=" ", flush=True)
+    total_added = 0
+    for actor in candidates:
+        if dry_run:
+            total_added += 5  # rough estimate
+            continue
+        tech_ids = infer_ttps_from_description(actor, session)
+        for tid in tech_ids:
+            session.add(ActorTTPMapping(
+                actor_id=actor.id,
+                technique_id=tid,
+                use_note="inferred by Claude from actor description",
+                source="claude-inference",
+            ))
+            total_added += 1
+        if tech_ids:
+            session.flush()
+
+    if not dry_run:
+        session.commit()
+    print(f"done — {total_added} inferred TTP mappings added")
+    _log_sync_status(session, "claude_ttp", "ok", dry_run)
+    return total_added
+
+
+def dedup_attck_actors(session: Any, dry_run: bool) -> int:
+    """Merge ATT&CK-sourced duplicate actors into their richer MISP counterparts.
+
+    When seed_attck ran before the alias-matching fix it created thin actors like
+    "Threat Group-3390" for groups whose canonical ATT&CK name didn't match any
+    existing actor by name.  Those duplicates hold the TTP mappings while the real
+    MISP record (APT27, APT10, …) has aliases, country codes, and sector data.
+
+    This function detects each (attck_dup, primary) pair — where primary.aliases
+    contains attck_dup.attck_group_id — and merges them: TTPs transfer to primary,
+    the duplicate is deleted.
+    """
+    attck_actors = session.query(ThreatActor).filter_by(source="attck").all()
+
+    merged = 0
+    for dup in attck_actors:
+        if not dup.attck_group_id:
+            continue
+        gid = dup.attck_group_id
+
+        # Find a non-attck actor whose aliases JSON contains this G-ID
+        primary: ThreatActor | None = None
+        for candidate in (
+            session.query(ThreatActor)
+            .filter(
+                ThreatActor.id != dup.id,
+                ThreatActor.source != "attck",
+            )
+            .all()
+        ):
+            if gid in (candidate.aliases or []):
+                primary = candidate
+                break
+
+        if not primary:
+            continue
+
+        if dry_run:
+            print(f"    would merge '{dup.name}' ({gid}) → '{primary.name}'")
+            merged += 1
+            continue
+
+        # Transfer TTP mappings via raw SQL to avoid cascade-delete wiping them.
+        # We move rows that don't already exist on primary, drop the rest.
+        from sqlalchemy import text
+
+        session.execute(
+            text("""
+            UPDATE actor_ttp_mappings
+            SET actor_id = :primary_id
+            WHERE actor_id = :dup_id
+              AND technique_id NOT IN (
+                  SELECT technique_id FROM actor_ttp_mappings WHERE actor_id = :primary_id
+              )
+        """),
+            {"primary_id": primary.id, "dup_id": dup.id},
+        )
+
+        # Copy enrichment fields that primary lacks
+        if not primary.attck_group_id:
+            primary.attck_group_id = gid
+        if dup.description and not primary.description:
+            primary.description = dup.description
+        for alias in dup.aliases or []:
+            if alias not in (primary.aliases or []):
+                primary.aliases = (primary.aliases or []) + [alias]
+        for ref in dup.references or []:
+            if ref not in (primary.references or []):
+                primary.references = (primary.references or []) + [ref]
+        if dup.source_url and not primary.source_url:
+            primary.source_url = dup.source_url
+
+        # Expire the ORM cache so the delete cascade sees no remaining mappings
+        session.expire(dup)
+        session.flush()
+        session.delete(dup)
+        merged += 1
+
+    if not dry_run:
+        session.commit()
+    print(f"  ATT&CK dedup: {merged} duplicate actors merged")
+    return merged
+
+
 def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
     targets = sources or ["misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet"]
-    print(f"Pythia seed pipeline {'(dry-run) ' if dry_run else ''}— targets: {', '.join(targets)}\n")
+    print(
+        f"Pythia seed pipeline {'(dry-run) ' if dry_run else ''}— targets: {', '.join(targets)}\n"
+    )
 
     if not dry_run:
         init_db()
@@ -850,6 +1228,12 @@ def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
             total += seed_attck(session, "mobile", dry_run)
         if "attck-ics" in targets:
             total += seed_attck(session, "ics", dry_run)
+
+        if any(
+            t in targets
+            for t in ("attck", "attck-enterprise", "attck-mobile", "attck-ics", "dedup")
+        ):
+            total += dedup_attck_actors(session, dry_run)
 
         if "atlas" in targets:
             total += seed_atlas(session, dry_run)
@@ -890,6 +1274,16 @@ def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
         if "signature-base" in targets:
             total += seed_signature_base(session, dry_run)
 
+        if "otx" in targets:
+            total += seed_otx_actors(session, dry_run)
+
+        if "claude-ttp" in targets:
+            total += seed_claude_ttp_inference(session, dry_run)
+
+        # Sophistication scoring runs after all TTP data is in place
+        if "sophistication" in targets or not sources:
+            total += seed_sophistication(session, dry_run)
+
     print(f"\nDone. Total records processed: {total}")
 
 
@@ -917,13 +1311,13 @@ def _download_zip(url: str, label: str) -> Path | None:
 
 def _extract_yara_title(content: str, filename: str) -> str:
     """Extract the first rule name from YARA content, falling back to filename stem."""
-    m = re.search(r'^rule\s+(\w+)', content, re.MULTILINE)
+    m = re.search(r"^rule\s+(\w+)", content, re.MULTILINE)
     return m.group(1) if m else Path(filename).stem
 
 
 def _extract_yara_technique_ids(content: str) -> list[str]:
     """Extract ATT&CK technique IDs referenced in a YARA rule's meta section."""
-    ids = re.findall(r'\b(T\d{4}(?:\.\d{3})?)\b', content)
+    ids = re.findall(r"\b(T\d{4}(?:\.\d{3})?)\b", content)
     return list(dict.fromkeys(t.upper() for t in ids))
 
 
@@ -970,16 +1364,18 @@ def seed_ipsum(session: Any, dry_run: bool) -> int:
 
         existing = session.query(IoC).filter_by(type="ip", value=ip_val).first()
         if not existing:
-            session.add(IoC(
-                type="ip",
-                value=ip_val,
-                confidence_source=conf_source,
-                confidence_info="2",
-                tlp="WHITE",
-                pyramid_tier="network",
-                context=f"IPsum aggregated blocklist — flagged by {score} source(s).",
-                source_url=url,
-            ))
+            session.add(
+                IoC(
+                    type="ip",
+                    value=ip_val,
+                    confidence_source=conf_source,
+                    confidence_info="2",
+                    tlp="WHITE",
+                    pyramid_tier="network",
+                    context=f"IPsum aggregated blocklist — flagged by {score} source(s).",
+                    source_url=url,
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -992,6 +1388,7 @@ def seed_ipsum(session: Any, dry_run: bool) -> int:
 def seed_phishtank(session: Any, dry_run: bool) -> int:
     """Ingest verified phishing URLs from PhishTank. Requires PHISHTANK_API_KEY."""
     from pythia.core.config import get_settings
+
     settings = get_settings()
     api_key = settings.phishtank_api_key
     if not api_key:
@@ -1023,16 +1420,18 @@ def seed_phishtank(session: Any, dry_run: bool) -> int:
 
         existing = session.query(IoC).filter_by(type="url", value=phish_url).first()
         if not existing:
-            session.add(IoC(
-                type="url",
-                value=phish_url,
-                confidence_source="A" if verified else "C",
-                confidence_info="2",
-                tlp="WHITE",
-                pyramid_tier="artifact",
-                context="PhishTank community-verified phishing URL.",
-                source_url="https://www.phishtank.com/",
-            ))
+            session.add(
+                IoC(
+                    type="url",
+                    value=phish_url,
+                    confidence_source="A" if verified else "C",
+                    confidence_info="2",
+                    tlp="WHITE",
+                    pyramid_tier="artifact",
+                    context="PhishTank community-verified phishing URL.",
+                    source_url="https://www.phishtank.com/",
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -1045,6 +1444,7 @@ def seed_phishtank(session: Any, dry_run: bool) -> int:
 def seed_malpedia(session: Any, dry_run: bool) -> int:
     """Ingest malware family records from Malpedia. Uses API key if MALPEDIA_API_KEY is set."""
     from pythia.core.config import get_settings
+
     settings = get_settings()
     api_key = settings.malpedia_api_key
 
@@ -1102,17 +1502,19 @@ def seed_malpedia(session: Any, dry_run: bool) -> int:
                 existing.malpedia_slug = slug
             seen_names.add(name)
         else:
-            session.add(MalwareFamily(
-                name=name,
-                aliases=[],
-                family_type=family_type,
-                actor_ids=[],
-                rule_ids=[],
-                references=[],
-                source="malpedia",
-                source_url=f"{base_url}/families/{slug}",
-                malpedia_slug=slug,
-            ))
+            session.add(
+                MalwareFamily(
+                    name=name,
+                    aliases=[],
+                    family_type=family_type,
+                    actor_ids=[],
+                    rule_ids=[],
+                    references=[],
+                    source="malpedia",
+                    source_url=f"{base_url}/families/{slug}",
+                    malpedia_slug=slug,
+                )
+            )
             seen_names.add(name)
             added += 1
 
@@ -1134,8 +1536,7 @@ def seed_sigma_full(session: Any, dry_run: bool) -> int:
     try:
         with zipfile.ZipFile(tmp_path) as zf:
             rule_paths = [
-                name for name in zf.namelist()
-                if "/rules/" in name and name.endswith(".yml")
+                name for name in zf.namelist() if "/rules/" in name and name.endswith(".yml")
             ]
             for zpath in rule_paths:
                 try:
@@ -1143,32 +1544,40 @@ def seed_sigma_full(session: Any, dry_run: bool) -> int:
                 except Exception:
                     continue
 
-                title_m = re.search(r'^title:\s*(.+)$', content, re.MULTILINE)
+                title_m = re.search(r"^title:\s*(.+)$", content, re.MULTILINE)
                 title = title_m.group(1).strip() if title_m else Path(zpath).stem
-                level_m = re.search(r'^level:\s*(\S+)', content, re.MULTILINE)
+                level_m = re.search(r"^level:\s*(\S+)", content, re.MULTILINE)
                 level = level_m.group(1).strip() if level_m else None
-                status_m = re.search(r'^status:\s*(\S+)', content, re.MULTILINE)
+                status_m = re.search(r"^status:\s*(\S+)", content, re.MULTILINE)
                 rule_status = status_m.group(1).strip() if status_m else None
-                technique_ids = list(dict.fromkeys(
-                    m.upper()
-                    for m in re.findall(r'attack\.(t\d{4}(?:\.\d{3})?)', content, re.IGNORECASE)
-                ))
+                technique_ids = list(
+                    dict.fromkeys(
+                        m.upper()
+                        for m in re.findall(r"attack\.(t\d{4}(?:\.\d{3})?)", content, re.IGNORECASE)
+                    )
+                )
 
                 if dry_run:
                     added += 1
                     continue
 
-                if not session.query(DetectionRule).filter_by(title=title, rule_type="sigma").first():
-                    session.add(DetectionRule(
-                        rule_type="sigma",
-                        title=title,
-                        content=content,
-                        technique_ids=technique_ids,
-                        actor_ids=[],
-                        severity=level,
-                        status=rule_status,
-                        source_url="https://github.com/SigmaHQ/sigma",
-                    ))
+                if (
+                    not session.query(DetectionRule)
+                    .filter_by(title=title, rule_type="sigma")
+                    .first()
+                ):
+                    session.add(
+                        DetectionRule(
+                            rule_type="sigma",
+                            title=title,
+                            content=content,
+                            technique_ids=technique_ids,
+                            actor_ids=[],
+                            severity=level,
+                            status=rule_status,
+                            source_url="https://github.com/SigmaHQ/sigma",
+                        )
+                    )
                     added += 1
 
         if not dry_run:
@@ -1191,7 +1600,8 @@ def seed_yara_rules(session: Any, dry_run: bool) -> int:
     try:
         with zipfile.ZipFile(tmp_path) as zf:
             yara_paths = [
-                name for name in zf.namelist()
+                name
+                for name in zf.namelist()
                 if name.endswith((".yar", ".yara")) and not name.endswith("/")
             ]
             for zpath in yara_paths:
@@ -1209,17 +1619,23 @@ def seed_yara_rules(session: Any, dry_run: bool) -> int:
                     added += 1
                     continue
 
-                if not session.query(DetectionRule).filter_by(title=title, rule_type="yara").first():
-                    session.add(DetectionRule(
-                        rule_type="yara",
-                        title=title,
-                        content=content,
-                        technique_ids=technique_ids,
-                        actor_ids=[],
-                        severity=None,
-                        status="stable",
-                        source_url="https://github.com/Yara-Rules/rules",
-                    ))
+                if (
+                    not session.query(DetectionRule)
+                    .filter_by(title=title, rule_type="yara")
+                    .first()
+                ):
+                    session.add(
+                        DetectionRule(
+                            rule_type="yara",
+                            title=title,
+                            content=content,
+                            technique_ids=technique_ids,
+                            actor_ids=[],
+                            severity=None,
+                            status="stable",
+                            source_url="https://github.com/Yara-Rules/rules",
+                        )
+                    )
                     added += 1
 
         if not dry_run:
@@ -1243,7 +1659,8 @@ def seed_icewater(session: Any, dry_run: bool) -> int:
     try:
         with zipfile.ZipFile(tmp_path) as zf:
             yara_paths = [
-                name for name in zf.namelist()
+                name
+                for name in zf.namelist()
                 if name.endswith((".yar", ".yara")) and not name.endswith("/")
             ]
             for zpath in yara_paths:
@@ -1261,17 +1678,23 @@ def seed_icewater(session: Any, dry_run: bool) -> int:
                     added += 1
                     continue
 
-                if not session.query(DetectionRule).filter_by(title=title, rule_type="yara").first():
-                    session.add(DetectionRule(
-                        rule_type="yara",
-                        title=title,
-                        content=content,
-                        technique_ids=technique_ids,
-                        actor_ids=[],
-                        severity=None,
-                        status="stable",
-                        source_url="https://github.com/SupportIntelligence/Icewater",
-                    ))
+                if (
+                    not session.query(DetectionRule)
+                    .filter_by(title=title, rule_type="yara")
+                    .first()
+                ):
+                    session.add(
+                        DetectionRule(
+                            rule_type="yara",
+                            title=title,
+                            content=content,
+                            technique_ids=technique_ids,
+                            actor_ids=[],
+                            severity=None,
+                            status="stable",
+                            source_url="https://github.com/SupportIntelligence/Icewater",
+                        )
+                    )
                     added += 1
 
         if not dry_run:
@@ -1318,32 +1741,42 @@ def seed_signature_base(session: Any, dry_run: bool) -> int:
                     status: str | None = "stable"
                 else:
                     rule_type = "sigma"
-                    title_m = re.search(r'^title:\s*(.+)$', content, re.MULTILINE)
+                    title_m = re.search(r"^title:\s*(.+)$", content, re.MULTILINE)
                     title = title_m.group(1).strip() if title_m else Path(zpath).stem
-                    level_m = re.search(r'^level:\s*(\S+)', content, re.MULTILINE)
+                    level_m = re.search(r"^level:\s*(\S+)", content, re.MULTILINE)
                     severity = level_m.group(1).strip() if level_m else None
-                    status_m = re.search(r'^status:\s*(\S+)', content, re.MULTILINE)
+                    status_m = re.search(r"^status:\s*(\S+)", content, re.MULTILINE)
                     status = status_m.group(1).strip() if status_m else None
-                    technique_ids = list(dict.fromkeys(
-                        m.upper()
-                        for m in re.findall(r'attack\.(t\d{4}(?:\.\d{3})?)', content, re.IGNORECASE)
-                    ))
+                    technique_ids = list(
+                        dict.fromkeys(
+                            m.upper()
+                            for m in re.findall(
+                                r"attack\.(t\d{4}(?:\.\d{3})?)", content, re.IGNORECASE
+                            )
+                        )
+                    )
 
                 if dry_run:
                     added += 1
                     continue
 
-                if not session.query(DetectionRule).filter_by(title=title, rule_type=rule_type).first():
-                    session.add(DetectionRule(
-                        rule_type=rule_type,
-                        title=title,
-                        content=content,
-                        technique_ids=technique_ids,
-                        actor_ids=[],
-                        severity=severity,
-                        status=status,
-                        source_url="https://github.com/Neo23x0/signature-base",
-                    ))
+                if (
+                    not session.query(DetectionRule)
+                    .filter_by(title=title, rule_type=rule_type)
+                    .first()
+                ):
+                    session.add(
+                        DetectionRule(
+                            rule_type=rule_type,
+                            title=title,
+                            content=content,
+                            technique_ids=technique_ids,
+                            actor_ids=[],
+                            severity=severity,
+                            status=status,
+                            source_url="https://github.com/Neo23x0/signature-base",
+                        )
+                    )
                     added += 1
 
         if not dry_run:
@@ -1365,7 +1798,8 @@ if __name__ == "__main__":
         help=(
             "Sources to load (default: all). "
             "Options: misp-galaxy attck attck-mobile attck-ics atlas kev sigma owasp apt-sheet "
-            "abuse-ch ipsum phishtank malpedia sigma-full yara-rules icewater signature-base"
+            "abuse-ch ipsum phishtank malpedia sigma-full yara-rules icewater signature-base "
+            "otx claude-ttp sophistication dedup"
         ),
     )
     parser.add_argument("--dry-run", action="store_true", help="Count only, no DB writes")

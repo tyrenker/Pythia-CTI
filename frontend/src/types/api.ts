@@ -38,6 +38,7 @@ export interface ActorSummary {
   motivations: string[]
   sectors_targeted: string[]
   sophistication: number | null
+  ttp_count: number
   attck_group_id: string | null
   tlp: string
   source: string

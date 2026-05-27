@@ -5,11 +5,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pythia.core.db import get_session
+from pythia.core.security import require_api_key
 from pythia.exporters.stix import export_actor as stix_export_actor
-from pythia.models.actor import ThreatActor
+from pythia.ingestion.enrichment import infer_ttps_from_description, rescore_actor
+from pythia.models.actor import ActorTTPMapping, ThreatActor
 from pythia.models.attck import AttckTechnique
 
 router = APIRouter()
@@ -33,6 +36,7 @@ class ActorSummary(BaseModel):
     motivations: list[str] = Field(default_factory=list)
     sectors_targeted: list[str] = Field(default_factory=list)
     sophistication: int | None = None
+    ttp_count: int = 0
     attck_group_id: str | None = None
     tlp: str
     source: str
@@ -101,7 +105,7 @@ def _resolve_actor(actor_id: str, session: Session) -> ThreatActor | None:
     return actor
 
 
-def _actor_to_summary(actor: ThreatActor) -> ActorSummary:
+def _actor_to_summary(actor: ThreatActor, ttp_count: int = 0) -> ActorSummary:
     return ActorSummary(
         id=actor.id,
         name=actor.name,
@@ -111,6 +115,7 @@ def _actor_to_summary(actor: ThreatActor) -> ActorSummary:
         motivations=actor.motivations or [],
         sectors_targeted=actor.sectors_targeted or [],
         sophistication=actor.sophistication,
+        ttp_count=ttp_count,
         attck_group_id=actor.attck_group_id,
         tlp=actor.tlp,
         source=actor.source,
@@ -146,7 +151,18 @@ async def list_actors(
     if sponsor_type:
         q = q.filter(ThreatActor.sponsor_type == sponsor_type)
     actors = q.order_by(ThreatActor.name).offset(offset).limit(limit).all()
-    return [_actor_to_summary(a) for a in actors]
+
+    # Fetch TTP counts for the returned page in a single query
+    actor_ids = [a.id for a in actors]
+    count_rows = (
+        session.query(ActorTTPMapping.actor_id, func.count(ActorTTPMapping.id))
+        .filter(ActorTTPMapping.actor_id.in_(actor_ids))
+        .group_by(ActorTTPMapping.actor_id)
+        .all()
+    )
+    counts: dict[str, int] = {r[0]: r[1] for r in count_rows}
+
+    return [_actor_to_summary(a, ttp_count=counts.get(a.id, 0)) for a in actors]
 
 
 @router.get("/{actor_id}", response_model=ActorDetail)
@@ -213,8 +229,8 @@ async def get_actor_diamond(
 
     tool_techs = [
         m.technique_id for m in actor.ttp_mappings
-        if session.get(AttckTechnique, m.technique_id) and
-        "T1588" in m.technique_id or "T1583" in m.technique_id  # Tool/Resource acquisition
+        if (session.get(AttckTechnique, m.technique_id) and
+        "T1588" in m.technique_id) or "T1583" in m.technique_id  # Tool/Resource acquisition
     ]
 
     return {
@@ -265,3 +281,62 @@ async def get_actor_diff(
         "note": "TTP diff tracking requires timestamped ingestion — coming in a future sync.",
         "current_ttp_count": len(actor.ttp_mappings),
     }
+
+
+class EnrichResult(BaseModel):
+    actor_id: str
+    actor_name: str
+    sophistication_before: int | None
+    sophistication_after: int | None
+    ttps_added: int
+    ttps_source: str | None
+
+
+@router.post("/{actor_id}/enrich", response_model=EnrichResult, dependencies=[Depends(require_api_key)])
+async def enrich_actor(
+    actor_id: str,
+    session: Session = Depends(get_session),
+) -> EnrichResult:
+    """Recompute sophistication score and optionally infer TTPs for a single actor.
+
+    Sophistication is always recalculated from current TTP data.  When the actor
+    has a description but zero TTP mappings and ANTHROPIC_API_KEY is configured,
+    Claude is used to infer a set of likely ATT&CK technique IDs.
+    """
+    actor = _resolve_actor(actor_id, session)
+    if not actor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+
+    soph_before = actor.sophistication
+
+    # Infer TTPs via Claude when the actor has a description but no mappings
+    ttps_added = 0
+    ttps_source: str | None = None
+    if not actor.ttp_mappings and actor.description:
+        tech_ids = infer_ttps_from_description(actor, session)
+        existing = {m.technique_id for m in actor.ttp_mappings}
+        for tid in tech_ids:
+            if tid not in existing:
+                session.add(ActorTTPMapping(
+                    actor_id=actor.id,
+                    technique_id=tid,
+                    use_note="inferred by Claude from actor description",
+                    source="claude-inference",
+                ))
+                existing.add(tid)
+                ttps_added += 1
+        if ttps_added:
+            session.flush()
+            ttps_source = "claude-inference"
+
+    soph_after = rescore_actor(actor, session)
+    session.commit()
+
+    return EnrichResult(
+        actor_id=actor.id,
+        actor_name=actor.name,
+        sophistication_before=soph_before,
+        sophistication_after=soph_after,
+        ttps_added=ttps_added,
+        ttps_source=ttps_source,
+    )
