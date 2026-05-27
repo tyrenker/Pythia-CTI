@@ -100,7 +100,7 @@ select = [
     "SIM",  # flake8-simplify
     "RUF",  # ruff-specific
 ]
-ignore = ["E501"]  # line length handled by formatter
+ignore = ["E501", "B008"]  # E501: line length; B008: FastAPI Depends() idiom
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]

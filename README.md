@@ -27,6 +27,10 @@ It ships **fully loaded from the first clone**: over 1,180 threat actor profiles
 
 ---
 
+![Pythia Dashboard](docs/dashboard.png)
+
+---
+
 ## What It Does
 
 ```

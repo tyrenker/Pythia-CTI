@@ -190,6 +190,19 @@ export interface SectorReport {
   rows: SectorRow[]
 }
 
+export interface DashboardSummary {
+  actor_by_sponsor: Record<string, number>
+  ioc_by_type: Record<string, number>
+  ttp_by_tactic: Record<string, number>
+  technique_count: number
+}
+
+export interface SyncStatusItem {
+  source: string
+  last_run: string | null
+  status: string
+}
+
 // ── AI Threats ───────────────────────────────────────────────────────────────
 
 export interface OWASPItem {

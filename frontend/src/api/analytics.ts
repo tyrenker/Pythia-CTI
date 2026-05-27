@@ -1,11 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
-import type { CoverageReport, SectorReport } from '@/types/api'
+import type { CoverageReport, DashboardSummary, SectorReport } from '@/types/api'
 
 export function useCoverage(limit = 20) {
   return useQuery({
     queryKey: ['coverage', limit],
     queryFn: () => apiFetch<CoverageReport>(`/analytics/coverage?limit=${limit}`),
+  })
+}
+
+export function useDashboardSummary() {
+  return useQuery({
+    queryKey: ['dashboard-summary'],
+    queryFn: () => apiFetch<DashboardSummary>('/analytics/summary'),
+  })
+}
+
+export function useGeographies(sponsorType?: string, country?: string) {
+  const p = new URLSearchParams()
+  if (sponsorType) p.set('sponsor_type', sponsorType)
+  if (country) p.set('country', country)
+  const qs = p.toString() ? `?${p}` : ''
+  return useQuery({
+    queryKey: ['geographies', sponsorType, country],
+    queryFn: () => apiFetch<SectorReport>(`/analytics/geographies${qs}`),
   })
 }
 

@@ -10,8 +10,8 @@
 ## Option A — Docker (Recommended)
 
 ```bash
-git clone https://github.com/tyrenker/pythia
-cd pythia
+git clone https://github.com/tyrenker/Pythia-CTI
+cd Pythia-CTI
 cp .env.example .env
 # Edit .env and set ANTHROPIC_API_KEY=sk-ant-...
 docker compose up -d
@@ -29,8 +29,8 @@ curl http://localhost:8000/v1/health
 ## Option B — Local Python
 
 ```bash
-git clone https://github.com/tyrenker/pythia
-cd pythia
+git clone https://github.com/tyrenker/Pythia-CTI
+cd Pythia-CTI
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[all]" # Installs all modules: ingestion, reporting, detections, and scheduling
 cp .env.example .env
