@@ -1,15 +1,6 @@
 <div align="center">
 
-```
- _____  __   __ _______ _    _ _____          
-|  __ \ \ \ / /|__   __| |  | |_   _|   /\   
-| |__) | \ V /    | |  | |__| | | |    /  \  
-|  ___/   | |     | |  |  __  | | |   / /\ \ 
-| |       | |     | |  | |  | |_| |_ / ____ \
- |_|       |_|     |_|  |_|  |_|_____/_/    \_\
-```
-
-**Oracle-grade threat intelligence, served as an API.**
+<img src="docs/logo.svg" alt="Pythia" width="800"/>
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)

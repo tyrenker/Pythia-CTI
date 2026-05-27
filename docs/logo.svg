@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="180" viewBox="0 0 800 180">
+  <!-- Background -->
+  <rect width="800" height="180" rx="12" fill="#13131f"/>
+  <rect x="0.5" y="0.5" width="799" height="179" rx="11.5" fill="none" stroke="#2a2a3e" stroke-width="1"/>
+
+  <!-- Subtle glow behind text -->
+  <ellipse cx="400" cy="85" rx="220" ry="50" fill="#7c3aed" opacity="0.06"/>
+
+  <!-- Hexagon icon -->
+  <polygon
+    points="44,72 56,52 80,52 92,72 80,92 56,92"
+    fill="none"
+    stroke="#7c3aed"
+    stroke-width="2.5"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="44,72 56,52 80,52 92,72 80,92 56,92"
+    fill="#7c3aed"
+    opacity="0.12"
+  />
+
+  <!-- PYTHIA wordmark -->
+  <text
+    x="400"
+    y="92"
+    font-family="'Courier New', Courier, monospace"
+    font-size="72"
+    font-weight="700"
+    fill="#e8e8f0"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    letter-spacing="12"
+  >PYTHIA</text>
+
+  <!-- Accent underline -->
+  <line x1="260" y1="122" x2="540" y2="122" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Subtitle -->
+  <text
+    x="400"
+    y="150"
+    font-family="'Courier New', Courier, monospace"
+    font-size="13"
+    fill="#6b6b8a"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    letter-spacing="3"
+  >ORACLE-GRADE THREAT INTELLIGENCE</text>
+</svg>
