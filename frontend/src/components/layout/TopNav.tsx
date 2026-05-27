@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Search, Settings } from 'lucide-react'
+import { Settings, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
 import { ApiKeyModal } from '../settings/ApiKeyModal'
@@ -54,10 +54,10 @@ export function TopNav() {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setIngestOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
             >
-              <Search size={12} />
-              <span className="hidden sm:inline">Ingest URL or text...</span>
+              <Zap size={12} />
+              <span className="hidden sm:inline">Analyze Intel</span>
             </button>
             <button
               onClick={() => setSettingsOpen(true)}

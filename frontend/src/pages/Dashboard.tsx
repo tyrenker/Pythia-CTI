@@ -17,16 +17,19 @@ import {
   Eye,
   EyeOff,
   FileText,
+  Link2,
   Shield,
   ShieldCheck,
   SlidersHorizontal,
   Users,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { useDashboardSummary, useCoverage, useGeographies, useSectors } from '@/api/analytics'
 import { useMalwareFamilies } from '@/api/malware'
 import { useSyncStatus } from '@/api/sync'
 import { useThreats } from '@/api/threats'
+import { IngestBar } from '@/components/shared/IngestBar'
 import { TlpBadge } from '@/components/shared/TlpBadge'
 import { timeAgo } from '@/lib/utils'
 
@@ -296,6 +299,13 @@ function CustomizePanel({
 export function Dashboard() {
   const [widgets, setWidgets] = useState<Record<WidgetKey, boolean>>(loadWidgets)
   const [showCustomize, setShowCustomize] = useState(false)
+  const [ingestOpen, setIngestOpen] = useState(false)
+  const [ingestTab, setIngestTab] = useState<'url' | 'text'>('url')
+
+  function openIngest(tab: 'url' | 'text') {
+    setIngestTab(tab)
+    setIngestOpen(true)
+  }
 
   const { data: threats } = useThreats({ limit: 5 })
   const { data: coverage } = useCoverage(3)
@@ -385,6 +395,39 @@ export function Dashboard() {
             onClose={() => setShowCustomize(false)}
           />
         )}
+      </div>
+
+      {/* Ingest hero */}
+      <div className="rounded-xl border border-accent/30 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-accent/20 p-2">
+              <Zap size={16} className="text-accent-bright" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Analyze Threat Intelligence</h2>
+              <p className="mt-1 text-xs text-text-muted">
+                Paste a URL or raw text — Claude extracts IOCs, TTPs, threat actors, and malware families in seconds.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => openIngest('url')}
+              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+            >
+              <Link2 size={12} />
+              Analyze URL
+            </button>
+            <button
+              onClick={() => openIngest('text')}
+              className="flex items-center gap-2 rounded-lg border border-[#2a2a3e] bg-bg-elevated px-4 py-2 text-xs font-medium text-text-primary hover:border-[#3a3a5e] hover:text-text-primary transition-colors"
+            >
+              <FileText size={12} />
+              Paste Text
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -550,11 +593,15 @@ export function Dashboard() {
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
                   <p className="text-xs text-text-muted">No intel reports yet.</p>
-                  <p className="mt-1 text-xs text-text-muted">
-                    Paste a URL to ingest your first intel report.
-                  </p>
+                  <button
+                    onClick={() => openIngest('url')}
+                    className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    <Zap size={12} />
+                    Analyze your first report
+                  </button>
                 </div>
               )}
             </WidgetCard>
@@ -666,6 +713,8 @@ export function Dashboard() {
           </div>
         </WidgetCard>
       )}
+
+      <IngestBar open={ingestOpen} onClose={() => setIngestOpen(false)} defaultTab={ingestTab} />
     </div>
   )
 }

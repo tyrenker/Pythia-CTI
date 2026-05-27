@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Loader2, Lock } from 'lucide-react'
 import { useParse } from '@/api/parse'
@@ -8,12 +8,17 @@ import { ApiKeyModal } from '../settings/ApiKeyModal'
 interface Props {
   open: boolean
   onClose: () => void
+  defaultTab?: 'url' | 'text'
 }
 
-export function IngestBar({ open, onClose }: Props) {
+export function IngestBar({ open, onClose, defaultTab = 'url' }: Props) {
   const navigate = useNavigate()
   const { apiKey } = useApiKey()
-  const [tab, setTab] = useState<'url' | 'text'>('url')
+  const [tab, setTab] = useState<'url' | 'text'>(defaultTab)
+
+  useEffect(() => {
+    if (open) setTab(defaultTab)
+  }, [open, defaultTab])
   const [url, setUrl] = useState('')
   const [rawText, setRawText] = useState('')
   const [showKeyModal, setShowKeyModal] = useState(false)
@@ -42,12 +47,15 @@ export function IngestBar({ open, onClose }: Props) {
     <>
       <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} />
       <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-2xl rounded-xl border border-[#2a2a3e] bg-bg-surface p-5 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text-primary">⬡ Ingest Intel</h2>
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-text-primary">⬡ Analyze Threat Intelligence</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary">
             <X size={16} />
           </button>
         </div>
+        <p className="mb-4 text-xs text-text-muted">
+          Claude extracts IOCs, TTPs, threat actors, and malware families automatically.
+        </p>
 
         <div className="mb-3 flex gap-2">
           {(['url', 'text'] as const).map(t => (
