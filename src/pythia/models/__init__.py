@@ -9,3 +9,4 @@ from pythia.models.owasp_llm import OwaspLlmItem  # noqa: F401
 from pythia.models.rule import DetectionRule  # noqa: F401
 from pythia.models.watchlist import Watchlist  # noqa: F401
 from pythia.models.sync_log import SyncLog  # noqa: F401
+from pythia.models.intel_feed import IntelFeedSource, IntelFeedArticle  # noqa: F401

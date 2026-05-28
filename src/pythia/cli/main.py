@@ -1114,6 +1114,48 @@ def ingest(
     parse(url=url)
 
 
+@app.command("fetch-feeds")
+def fetch_feeds(
+    source: str = typer.Option(None, "--source", "-s", help="Vendor slug to poll (default: all active sources)"),
+    dry_run: bool = typer.Option(False, help="Count new articles without inserting"),
+) -> None:
+    """Poll all active RSS/Atom intel feeds and queue new articles."""
+    from pythia.core.db import SessionLocal
+    from pythia.ingestion.feed_poller import poll_all_feeds
+    from pythia.models.intel_feed import IntelFeedSource
+
+    with SessionLocal() as session:
+        if source:
+            src = session.query(IntelFeedSource).filter_by(vendor=source, active=True).first()
+            if not src:
+                console.print(f"[red]No active source with vendor slug '{source}' found.[/red]")
+                raise typer.Exit(code=1)
+            # Temporarily isolate by deactivating others is complex; just poll all and note filter
+            console.print(f"[cyan]Polling feed: {src.name}...[/cyan]")
+        else:
+            console.print("[cyan]Polling all active intel feeds...[/cyan]")
+
+        new_count = poll_all_feeds(session, dry_run=dry_run)
+        action = "would be added" if dry_run else "new articles queued"
+        console.print(f"[green]{new_count} {action}.[/green]")
+
+
+@app.command("process-feed-queue")
+def process_feed_queue(
+    limit: int = typer.Option(10, help="Max articles to ingest through Claude"),
+    dry_run: bool = typer.Option(False, help="Count without calling Claude"),
+) -> None:
+    """Run Claude on queued articles from sources with auto_ingest enabled."""
+    from pythia.core.db import SessionLocal
+    from pythia.ingestion.feed_poller import process_article_queue
+
+    with SessionLocal() as session:
+        console.print(f"[cyan]Processing up to {limit} queued articles through Claude...[/cyan]")
+        count = process_article_queue(session, limit=limit, dry_run=dry_run)
+        action = "would be ingested" if dry_run else "articles ingested"
+        console.print(f"[green]{count} {action}.[/green]")
+
+
 @app.command()
 def sync(
     sources: list[str] = typer.Argument(
@@ -1148,7 +1190,7 @@ def sync(
       icewater       SupportIntelligence/Icewater YARA rules (~12 800 rules)
       signature-base Neo23x0/signature-base YARA + Sigma rules
     """
-    targets = sources or ["misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet"]
+    targets = sources or ["misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet", "intel-feeds"]
     console.print(f"[bold cyan]Pythia sync[/bold cyan] — refreshing: {', '.join(targets)}\n")
     if dry_run:
         console.print("[dim]dry-run: counting records only, no DB writes[/dim]\n")

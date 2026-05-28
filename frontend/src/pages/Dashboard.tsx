@@ -26,12 +26,13 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useDashboardSummary, useCoverage, useGeographies, useSectors } from '@/api/analytics'
+import { useFeedArticles } from '@/api/intel-feed'
 import { useMalwareFamilies } from '@/api/malware'
 import { useSyncStatus } from '@/api/sync'
 import { useThreats } from '@/api/threats'
 import { IngestBar } from '@/components/shared/IngestBar'
 import { TlpBadge } from '@/components/shared/TlpBadge'
-import { timeAgo } from '@/lib/utils'
+import { formatDate, timeAgo } from '@/lib/utils'
 
 // ── Widget visibility ─────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ type WidgetKey =
   | 'coverage'
   | 'ioc_breakdown'
   | 'recent_intel'
+  | 'recent_articles'
   | 'sector_targeting'
   | 'geo_targeting'
   | 'tactic_bar'
@@ -50,6 +52,7 @@ const WIDGET_LABELS: Record<WidgetKey, string> = {
   coverage: 'Detection Coverage',
   ioc_breakdown: 'IoC Breakdown',
   recent_intel: 'Recent Intel',
+  recent_articles: 'Recent Articles',
   sector_targeting: 'Sector Targeting',
   geo_targeting: 'Geography Targeting',
   tactic_bar: 'ATT&CK Tactics',
@@ -61,6 +64,7 @@ const DEFAULTS: Record<WidgetKey, boolean> = {
   coverage: true,
   ioc_breakdown: true,
   recent_intel: true,
+  recent_articles: true,
   sector_targeting: true,
   geo_targeting: true,
   tactic_bar: true,
@@ -314,6 +318,7 @@ export function Dashboard() {
   const { data: malware } = useMalwareFamilies({ limit: 1000 })
   const { data: summary } = useDashboardSummary()
   const { data: syncItems } = useSyncStatus()
+  const { data: recentArticles } = useFeedArticles({ limit: 10 })
 
   function toggleWidget(key: WidgetKey) {
     setWidgets(prev => {
@@ -560,7 +565,7 @@ export function Dashboard() {
 
       {/* Intel + Sector row */}
       {(widgets.recent_intel || widgets.sector_targeting) && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
           {widgets.recent_intel && (
             <WidgetCard title="Recent Intel">
               {threats && threats.length > 0 ? (
@@ -609,7 +614,7 @@ export function Dashboard() {
 
           {widgets.sector_targeting && sectorRows.length > 0 && (
             <WidgetCard title="Sector Targeting">
-              <ResponsiveContainer width="100%" height={Math.max(200, sectorRows.length * 24)}>
+              <ResponsiveContainer width="100%" height={sectorRows.length * 44 + 40}>
                 <BarChart data={sectorRows} layout="vertical" margin={{ left: 80 }}>
                   <XAxis type="number" tick={{ fill: '#6b6b8a', fontSize: 10 }} />
                   <YAxis
@@ -625,14 +630,55 @@ export function Dashboard() {
                       fontSize: 11,
                     }}
                   />
-                  <Bar dataKey="Nation-state" stackId="a" fill="#7c3aed" />
-                  <Bar dataKey="Fin. motivated" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="Hacktivist" stackId="a" fill="#ef4444" />
+                  <Bar dataKey="Nation-state" stackId="a" fill="#7c3aed" barSize={18} />
+                  <Bar dataKey="Fin. motivated" stackId="a" fill="#f59e0b" barSize={18} />
+                  <Bar dataKey="Hacktivist" stackId="a" fill="#ef4444" barSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             </WidgetCard>
           )}
         </div>
+      )}
+
+      {/* Recent Articles */}
+      {widgets.recent_articles && (
+        <WidgetCard title="Recent Blogs & Articles">
+          {recentArticles && recentArticles.length > 0 ? (
+            <div className="space-y-1">
+              {recentArticles.map(a => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between gap-3 rounded-lg p-2 text-xs hover:bg-bg-elevated transition-colors"
+                >
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 truncate text-accent-bright hover:underline"
+                  >
+                    {a.title ?? a.url}
+                  </a>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="rounded-full bg-[#1e1e2f] px-2 py-0.5 text-text-muted">
+                      {a.source_name}
+                    </span>
+                    <span className="text-text-muted">{formatDate(a.published_at)}</span>
+                  </div>
+                </div>
+              ))}
+              <Link
+                to="/articles"
+                className="block pt-2 text-xs text-accent-bright hover:underline"
+              >
+                → View all
+              </Link>
+            </div>
+          ) : (
+            <p className="py-4 text-center text-xs text-text-muted">
+              No articles yet — pull feeds from the Intel Feed page.
+            </p>
+          )}
+        </WidgetCard>
       )}
 
       {/* Geography targeting */}

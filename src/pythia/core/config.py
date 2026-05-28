@@ -44,6 +44,10 @@ class Settings(BaseSettings):
 
     enable_scheduler: bool = Field(default=False, description="Start APScheduler background sync on API startup")
 
+    # Intel feed aggregator
+    feed_auto_ingest: bool = Field(default=False, description="Auto-run Claude on new feed articles")
+    feed_max_articles_per_run: int = Field(default=10, description="Max Claude calls per scheduler tick")
+
     @model_validator(mode="after")
     def resolve_sqlite_path(self) -> Settings:
         if self.database_url.startswith("sqlite:///./"):

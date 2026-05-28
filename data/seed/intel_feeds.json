@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Mandiant Blog",
+    "vendor": "mandiant",
+    "url": "https://www.mandiant.com/resources/blog/rss.xml"
+  },
+  {
+    "name": "Microsoft Security Blog",
+    "vendor": "microsoft",
+    "url": "https://www.microsoft.com/en-us/security/blog/feed/"
+  },
+  {
+    "name": "Google Threat Analysis Group",
+    "vendor": "google-tag",
+    "url": "https://blog.google/threat-analysis-group/rss/"
+  },
+  {
+    "name": "CrowdStrike Blog",
+    "vendor": "crowdstrike",
+    "url": "https://www.crowdstrike.com/blog/feed/"
+  },
+  {
+    "name": "Palo Alto Unit 42",
+    "vendor": "unit42",
+    "url": "https://unit42.paloaltonetworks.com/feed/"
+  },
+  {
+    "name": "Cisco Talos Intelligence",
+    "vendor": "talos",
+    "url": "https://blog.talosintelligence.com/feeds/posts/default"
+  },
+  {
+    "name": "SentinelLabs",
+    "vendor": "sentinelone",
+    "url": "https://www.sentinelone.com/labs/feed/"
+  },
+  {
+    "name": "Huntress Blog",
+    "vendor": "huntress",
+    "url": "https://www.huntress.com/blog/rss.xml"
+  },
+  {
+    "name": "Volexity Blog",
+    "vendor": "volexity",
+    "url": "https://www.volexity.com/blog/feed/"
+  },
+  {
+    "name": "Trend Micro Research",
+    "vendor": "trendmicro",
+    "url": "https://www.trendmicro.com/en_us/research.rss"
+  },
+  {
+    "name": "Kaspersky Securelist",
+    "vendor": "kaspersky",
+    "url": "https://securelist.com/feed/"
+  },
+  {
+    "name": "Check Point Research",
+    "vendor": "checkpoint",
+    "url": "https://research.checkpoint.com/feed/"
+  },
+  {
+    "name": "CISA Advisories",
+    "vendor": "cisa",
+    "url": "https://www.cisa.gov/uscert/ncas/alerts.xml"
+  },
+  {
+    "name": "The DFIR Report",
+    "vendor": "dfir",
+    "url": "https://thedfirreport.com/feed/"
+  },
+  {
+    "name": "Secureworks CTU",
+    "vendor": "secureworks",
+    "url": "https://www.secureworks.com/blog/rss.xml"
+  },
+  {
+    "name": "Red Canary Blog",
+    "vendor": "redcanary",
+    "url": "https://redcanary.com/blog/feed/"
+  },
+  {
+    "name": "NCC Group Research",
+    "vendor": "nccgroup",
+    "url": "https://research.nccgroup.com/feed/"
+  },
+  {
+    "name": "Sophos X-Ops",
+    "vendor": "sophos",
+    "url": "https://news.sophos.com/en-us/feed/"
+  }
+]

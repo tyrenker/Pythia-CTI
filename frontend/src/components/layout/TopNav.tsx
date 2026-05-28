@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { to: '/ai-threats', label: 'AI Threats' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/watchlist', label: 'Watchlist' },
+  { to: '/articles', label: 'Articles' },
   { to: '/docs', label: 'Docs' },
 ]
 

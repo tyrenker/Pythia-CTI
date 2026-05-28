@@ -12,6 +12,7 @@ export interface ThreatSummary {
   title: string | null
   url: string | null
   publication_date: string | null
+  created_at: string | null
   tlp: string
   status: string
   actors: string[]
@@ -279,4 +280,34 @@ export interface ParseResponse {
   title: string | null
   tlp: string
   status: string
+}
+
+// ── Intel Feed ───────────────────────────────────────────────────────────────
+
+export interface FeedSource {
+  id: string
+  name: string
+  vendor: string
+  url: string
+  active: boolean
+  auto_ingest: boolean
+  poll_interval_h: number
+  last_polled_at: string | null
+  last_error: string | null
+  article_count: number
+  created_at: string
+}
+
+export interface FeedArticle {
+  id: string
+  source_id: string
+  source_name: string
+  title: string | null
+  url: string
+  published_at: string | null
+  summary: string | null
+  status: 'queued' | 'ingesting' | 'done' | 'failed' | 'skipped'
+  report_id: string | null
+  error: string | null
+  created_at: string
 }
