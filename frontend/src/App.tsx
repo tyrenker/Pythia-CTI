@@ -17,6 +17,7 @@ import { AiThreats } from './pages/AiThreats'
 import { Analytics } from './pages/Analytics'
 import { Watchlist } from './pages/Watchlist'
 import { Docs } from './pages/Docs'
+import { RecentArticles } from './pages/RecentArticles'
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/articles" element={<RecentArticles />} />
         </Routes>
       </Shell>
     </BrowserRouter>

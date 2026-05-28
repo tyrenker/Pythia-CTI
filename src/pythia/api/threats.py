@@ -17,6 +17,7 @@ class ThreatSummary(BaseModel):
     title: str | None = None
     url: str | None = None
     publication_date: str | None = None
+    created_at: str | None = None
     tlp: str
     status: str
     actors: list[str] = Field(default_factory=list)
@@ -42,6 +43,7 @@ def _to_summary(r: SourceReport) -> ThreatSummary:
         title=r.title,
         url=r.url,
         publication_date=r.publication_date,
+        created_at=r.created_at.isoformat() if r.created_at else None,
         tlp=r.tlp,
         status=r.status,
         actors=actors,

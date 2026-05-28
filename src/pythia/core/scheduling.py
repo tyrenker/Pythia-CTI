@@ -25,6 +25,19 @@ def _run_seed_fn(fn_name: str) -> None:
         fn(session, dry_run=False)
 
 
+def _run_feed_fn(fn_name: str) -> None:
+    from pythia.core.config import get_settings
+    from pythia.core.db import SessionLocal
+    from pythia.ingestion import feed_poller as _poller
+    settings = get_settings()
+    fn = getattr(_poller, fn_name)
+    with SessionLocal() as session:
+        if fn_name == "process_article_queue":
+            fn(session, limit=settings.feed_max_articles_per_run)
+        else:
+            fn(session)
+
+
 def start_scheduler() -> None:
     """Start the background scheduler. No-op if APScheduler is not installed."""
     global _scheduler
@@ -53,6 +66,11 @@ def start_scheduler() -> None:
     _scheduler.add_job(lambda: _run_seed_fn("seed_otx_actors"),            "cron", day_of_week="sun", hour=9, id="otx")
     _scheduler.add_job(lambda: _run_seed_fn("seed_claude_ttp_inference"),  "cron", day_of_week="sun", hour=10, id="claude_ttp")
     _scheduler.add_job(lambda: _run_seed_fn("seed_sophistication"),        "cron", day_of_week="sun", hour=11, id="sophistication")
+
+    # Intel feed: poll RSS sources every 4 hours
+    _scheduler.add_job(lambda: _run_feed_fn("poll_all_feeds"),         "interval", hours=4, id="feed_poll")
+    # Intel feed: process queued articles every hour (only fires if auto_ingest sources exist)
+    _scheduler.add_job(lambda: _run_feed_fn("process_article_queue"),  "interval", hours=1, id="feed_ingest")
 
     _scheduler.start()
 

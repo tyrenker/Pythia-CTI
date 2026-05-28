@@ -916,6 +916,40 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
     return total_added
 
 
+def seed_intel_feeds(session: Any, dry_run: bool) -> int:
+    """Populate intel_feed_sources from data/seed/intel_feeds.json (upsert by URL)."""
+    from pythia.models.intel_feed import IntelFeedSource
+
+    feeds_path = _DATA_DIR / "seed" / "intel_feeds.json"
+    if not feeds_path.exists():
+        print("  intel-feeds: data/seed/intel_feeds.json not found — skipping")
+        return 0
+
+    with feeds_path.open() as f:
+        feeds: list[dict[str, Any]] = json.load(f)
+
+    added = 0
+    for entry in feeds:
+        url = entry["url"]
+        if dry_run:
+            added += 1
+            continue
+        existing = session.query(IntelFeedSource).filter_by(url=url).first()
+        if not existing:
+            session.add(IntelFeedSource(
+                name=entry["name"],
+                vendor=entry["vendor"],
+                url=url,
+            ))
+            added += 1
+
+    if not dry_run:
+        session.commit()
+    print(f"  intel-feeds: {added} sources added")
+    _log_sync_status(session, "intel_feeds", "ok", dry_run)
+    return added
+
+
 def seed_sophistication(session: Any, dry_run: bool) -> int:
     """Compute and persist heuristic sophistication scores for all threat actors.
 
@@ -1273,6 +1307,9 @@ def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
 
         if "signature-base" in targets:
             total += seed_signature_base(session, dry_run)
+
+        if "intel-feeds" in targets:
+            total += seed_intel_feeds(session, dry_run)
 
         if "otx" in targets:
             total += seed_otx_actors(session, dry_run)

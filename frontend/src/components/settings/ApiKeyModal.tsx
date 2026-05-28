@@ -2,32 +2,45 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useApiKey } from '@/hooks/useApiKey'
 
+const CLAUDE_KEY = 'pythia_claude_api_key'
+
 interface Props {
   open: boolean
   onClose: () => void
 }
 
 export function ApiKeyModal({ open, onClose }: Props) {
-  const { apiKey, setApiKey } = useApiKey()
-  const [draft, setDraft] = useState('')
+  // pythia_api_key → sent as X-API-Key to authenticate write endpoints
+  const { apiKey: serverKey, setApiKey: setServerKey } = useApiKey()
+  const [serverDraft, setServerDraft] = useState('')
+
+  // Claude API key stored separately (used by the backend via .env, shown here for reference)
+  const [claudeDraft, setClaudeDraft] = useState('')
+  const storedClaudeKey = localStorage.getItem(CLAUDE_KEY) ?? ''
 
   if (!open) return null
 
-  const masked = apiKey
-    ? `sk-ant-${'•'.repeat(14)} (last 4: ${apiKey.slice(-4)})`
-    : 'Not configured'
+  const maskedServer = serverKey
+    ? `${'•'.repeat(Math.max(0, serverKey.length - 4))}${serverKey.slice(-4)}`
+    : 'Not set'
+
+  const maskedClaude = storedClaudeKey
+    ? `sk-ant-${'•'.repeat(14)} (last 4: ${storedClaudeKey.slice(-4)})`
+    : 'Not set'
 
   function handleSave() {
-    if (draft.trim()) {
-      setApiKey(draft.trim())
-      setDraft('')
-      onClose()
-    }
+    if (serverDraft.trim()) setServerKey(serverDraft.trim())
+    if (claudeDraft.trim()) localStorage.setItem(CLAUDE_KEY, claudeDraft.trim())
+    setServerDraft('')
+    setClaudeDraft('')
+    onClose()
   }
 
   function handleClear() {
-    setApiKey('')
-    setDraft('')
+    setServerKey('')
+    localStorage.removeItem(CLAUDE_KEY)
+    setServerDraft('')
+    setClaudeDraft('')
   }
 
   return (
@@ -40,43 +53,48 @@ export function ApiKeyModal({ open, onClose }: Props) {
           </button>
         </div>
 
+        {/* Pythia server key */}
         <div className="mb-4">
-          <label className="block mb-1 text-xs text-text-muted">Current key</label>
-          <p className="font-mono text-xs text-text-primary">{masked}</p>
-        </div>
-
-        <div className="mb-4">
-          <label className="block mb-1 text-xs text-text-muted">New key</label>
+          <label className="block mb-1 text-xs font-medium text-text-primary">
+            Pythia API Key
+          </label>
+          <p className="mb-1.5 font-mono text-xs text-text-muted">{maskedServer}</p>
           <input
             type="password"
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
+            value={serverDraft}
+            onChange={e => setServerDraft(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSave()}
-            placeholder="sk-ant-..."
+            placeholder="Value of PYTHIA_API_KEY in your .env"
             className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
           />
+          <p className="mt-1 text-xs text-text-muted">
+            Required to use write endpoints (ingest, poll feeds, watchlist).
+          </p>
         </div>
 
-        <p className="mb-4 text-xs text-text-muted">
-          Your key is stored only in this browser and never sent to any server other than your local Pythia instance.
-        </p>
-
         <div className="mb-5 border-t border-[#2a2a3e] pt-4">
-          <p className="mb-3 text-xs font-semibold text-text-muted">Feed API Keys (optional)</p>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-text-primary">Malpedia API Key</p>
-              <p className="mt-0.5 text-xs text-text-muted">Enables full family-actor associations on sync.</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-text-primary">PhishTank App Key</p>
-              <p className="mt-0.5 text-xs text-text-muted">Required for the PhishTank phishing URL feed.</p>
-            </div>
+          {/* Claude key — informational, backend reads from .env */}
+          <div className="mb-4">
+            <label className="block mb-1 text-xs font-medium text-text-primary">
+              Claude (Anthropic) API Key
+            </label>
+            <p className="mb-1.5 font-mono text-xs text-text-muted">{maskedClaude}</p>
+            <input
+              type="password"
+              value={claudeDraft}
+              onChange={e => setClaudeDraft(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+            />
+            <p className="mt-1 text-xs text-text-muted">
+              Used by the backend for AI ingestion. Set <code className="font-mono">ANTHROPIC_API_KEY</code> in <code className="font-mono">.env</code> — storing it here is optional.
+            </p>
           </div>
-          <p className="mt-3 text-xs text-text-muted">
-            Set these in your <code className="font-mono">.env</code> file as{' '}
-            <code className="font-mono">MALPEDIA_API_KEY</code> and{' '}
-            <code className="font-mono">PHISHTANK_API_KEY</code>.
+
+          <p className="text-xs font-semibold text-text-muted mb-2">Other feed keys (server-side only)</p>
+          <p className="text-xs text-text-muted">
+            Set <code className="font-mono">MALPEDIA_API_KEY</code> and{' '}
+            <code className="font-mono">PHISHTANK_API_KEY</code> in your <code className="font-mono">.env</code> file.
           </p>
         </div>
 

@@ -16,6 +16,7 @@ from pythia.api import (
     ai_threats,
     analytics,
     feed,
+    intel_feed,
     iocs,
     malware,
     parse,
@@ -78,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router, prefix="/v1/analytics", tags=["analytics"])
     app.include_router(watchlist.router, prefix="/v1/watchlist", tags=["watchlist"])
     app.include_router(feed.router, prefix="/v1", tags=["feed"])
+    app.include_router(intel_feed.router, prefix="/v1/intel-feed", tags=["intel-feed"])
     app.include_router(malware.router, prefix="/v1/malware", tags=["malware"])
     app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])
 
