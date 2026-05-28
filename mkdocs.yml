@@ -33,6 +33,7 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Threat Hunt Workbench: hunt-workbench.md
   - API Reference: api.md
   - Frameworks: frameworks.md
   - External Intel Sources: external-intel.md

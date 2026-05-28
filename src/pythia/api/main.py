@@ -16,6 +16,7 @@ from pythia.api import (
     ai_threats,
     analytics,
     feed,
+    hunts,
     intel_feed,
     iocs,
     malware,
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(intel_feed.router, prefix="/v1/intel-feed", tags=["intel-feed"])
     app.include_router(malware.router, prefix="/v1/malware", tags=["malware"])
     app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])
+    app.include_router(hunts.router, prefix="/v1/hunts", tags=["hunts"])
 
     # Serve built frontend — must be last so it doesn't shadow /v1/* or /docs
     _frontend_dist = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"

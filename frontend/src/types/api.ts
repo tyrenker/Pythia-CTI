@@ -311,3 +311,84 @@ export interface FeedArticle {
   error: string | null
   created_at: string
 }
+
+// ── Hunt Workbench ────────────────────────────────────────────────────────────
+
+export interface HuntObservation {
+  id: string
+  session_id: string
+  obs_type: string
+  value: string
+  pyramid_tier: string | null
+  confidence_source: string
+  confidence_info: string
+  linked_record_id: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface HuntSessionSummary {
+  id: string
+  name: string
+  hypothesis: string | null
+  status: string
+  analyst: string | null
+  sector_focus: string[]
+  motivation_focus: string[]
+  observation_count: number
+  detection_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface HuntSessionDetail extends HuntSessionSummary {
+  observations: HuntObservation[]
+}
+
+export interface HuntNote {
+  session_id: string
+  content: string
+  updated_at: string
+}
+
+export interface HuntDraftDetection {
+  id: string
+  session_id: string
+  title: string
+  rule_type: string
+  content: string
+  pyramid_tier: string
+  linked_ttp_ids: string[]
+  linked_obs_ids: string[]
+  rationale: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ActorSuggestion {
+  actor_name: string
+  actor_id: string | null
+  confidence_source: string
+  confidence_info: string
+  matching_observations: string[]
+  match_types: string[]
+  rationale: string
+  gaps: string
+  alternative_hypothesis: string | null
+}
+
+export interface ActorSuggestionsResponse {
+  suggestions: ActorSuggestion[]
+  analyst_notes: string
+}
+
+export interface HypothesisRefinement {
+  assessment: string
+  supporting_evidence: string[]
+  contradicting_evidence: string[]
+  evidence_gaps: string[]
+  alternative_hypotheses: { hypothesis: string; likelihood: string; distinguishing_test: string }[]
+  recommended_pivots: { action: string; rationale: string; priority: string }[]
+}
+

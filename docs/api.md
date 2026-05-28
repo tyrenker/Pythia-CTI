@@ -105,6 +105,26 @@ Set `PYTHIA_API_KEY` in your `.env` file.
 | `DELETE` | `/v1/watchlist/{id}` | Remove subscription *(auth)* |
 | `POST` | `/v1/watchlist/test` | Send test ping to a webhook URL *(auth)* |
 
+### Threat Hunt Workbench
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/v1/hunts` | Create a new threat hunt session *(auth)* |
+| `GET` | `/v1/hunts` | List threat hunt sessions (`?status=active\|archived\|closed`) |
+| `GET` | `/v1/hunts/{id}` | Detailed session metadata, notes and observations |
+| `PUT` | `/v1/hunts/{id}` | Update session metadata *(auth)* |
+| `DELETE` | `/v1/hunts/{id}` | Archive a hunt session *(auth)* |
+| `POST` | `/v1/hunts/{id}/observations` | Log an observation (auto-links to DB IoCs/actors/techniques) *(auth)* |
+| `DELETE` | `/v1/hunts/{id}/observations/{obs_id}` | Remove an observation *(auth)* |
+| `GET` | `/v1/hunts/{id}/notes` | Retrieve session notes |
+| `PUT` | `/v1/hunts/{id}/notes` | Save session notes *(auth)* |
+| `POST` | `/v1/hunts/{id}/suggest-actors` | Run Claude AI threat actor suggestions *(auth)* |
+| `POST` | `/v1/hunts/{id}/refine-hypothesis` | Run Claude AI hypothesis refinement review *(auth)* |
+| `POST` | `/v1/hunts/{id}/draft-detection` | Generate a code-level detection rule *(auth)* |
+| `GET` | `/v1/hunts/{id}/detections` | List drafted rules |
+| `PUT` | `/v1/hunts/{id}/detections/{det_id}` | Edit a drafted detection rule *(auth)* |
+| `POST` | `/v1/hunts/{id}/detections/{det_id}/promote` | Promote a draft rule to Pythia's main signature database *(auth)* |
+
 ### Feed
 
 | Method | Endpoint | Description |
@@ -164,4 +184,19 @@ curl -X POST http://localhost:8000/v1/watchlist \
   -H "X-API-Key: $PYTHIA_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"Lazarus Watch","filter_actor":"lazarus","webhook_url":"https://hooks.slack.com/...","webhook_type":"slack"}'
+
+# Threat Hunt Workbench: create a new session
+curl -X POST http://localhost:8000/v1/hunts \
+  -H "X-API-Key: $PYTHIA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Unsigned DLL side-loading hunt","hypothesis":"Threat actor is using unsigned DLL side-loading to bypass EDR."}'
+
+# Threat Hunt Workbench: log an observation
+curl -X POST http://localhost:8000/v1/hunts/<session_id>/observations \
+  -H "X-API-Key: $PYTHIA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"obs_type":"ttp","value":"T1574.002","confidence_source":"B","confidence_info":"2"}'
+
+# Threat Hunt Workbench: run AI actor attribution suggestions
+curl -X POST http://localhost:8000/v1/hunts/<session_id>/suggest-actors -H "X-API-Key: $PYTHIA_API_KEY"
 ```

@@ -47,6 +47,7 @@ Blog post / vendor report / OSINT
     │  /ttps       ATT&CK + ATLAS techniques      │
     │  /iocs       indicators of compromise       │
     │  /rules      Sigma detection rules          │
+    │  /hunts      Threat hunt workbench & AI     │
     │  /threats    ingested intel reports         │
     │  /reports    PDF generation                 │
     │  /parse      Claude extraction endpoint     │
@@ -342,6 +343,14 @@ Pythia is designed to handle three core cyber threat intelligence (CTI) and secu
      ```
 * **What you get:** A complete profile of the actor, their known nation-state affiliations, geographical targets, their **Diamond Model** (Adversary/Infrastructure/Capability/Victim), and their historical TTPs organized chronologically to let your security engineers build preemptive log coverage.
 
+### Workflow D: Interactive Threat Hunt Workbench (SecOps) 🎯
+* **Goal:** Launch an interactive, scoped threat hunt session, log discovered indicators/TTPs rated by the Admiralty Code, use AI to suggest threat actor matches, and generate SIEM-ready detection rules.
+* **The Process:**
+  1. **Start a new Hunt Session (using the UI or API):** Define a hypothesis, target sectors, and motivation focus.
+  2. **Log observations:** Enter discovered IPs, hashes, or ATT&CK techniques. The workbench automatically maps them to the Pyramid of Pain and links them to matching profiles in Pythia's database.
+  3. **Run AI-Powered Actor suggestions & Refinement:** Use Claude to cross-reference observations against 1,180+ threat actors to identify potential attribution matches, and refine your hypothesis.
+  4. **Draft and promote detections:** Automatically draft Sigma, YARA, or KQL rules for your observations, review them, and promote them with a single click to your global detections library.
+
 ---
 
 ## CLI
@@ -374,6 +383,7 @@ src/pythia/
 │   ├── rules.py       # /v1/rules — Sigma/Yara detection rules
 │   ├── threats.py     # /v1/threats — ingested report feed
 │   ├── reports.py     # /v1/reports/{id}/pdf — PDF generation
+│   ├── hunts.py       # /v1/hunts — Threat hunt workbench (AI-assisted)
 │   └── parse.py       # /v1/parse — Claude extraction endpoint
 │
 ├── core/
@@ -381,12 +391,15 @@ src/pythia/
 │   ├── db.py          # SQLAlchemy engine + session (WAL mode, FK enforcement)
 │   └── seed.py        # MISP Galaxy, ATT&CK STIX, CISA KEV, ATLAS, Sigma pipeline
 │
-├── models/            # SQLAlchemy ORM — ThreatActor, AttckTechnique, IoC,
-│                      #                  DetectionRule, SourceReport
+├── models/            # SQLAlchemy ORM — ThreatActor, AttckTechnique, IoC, HuntSession...
 │
 ├── ingestion/
 │   ├── claude_parser.py        # Anthropic SDK → structured JSON
-│   ├── prompts/extract_intel.md  # system prompt with JSON schema
+│   ├── prompts/
+│   │   ├── extract_intel.md  # system prompt with JSON schema
+│   │   ├── hunt_suggest_actors.md     # AI actor recommendation prompt
+│   │   ├── hunt_refine_hypothesis.md   # AI hypothesis refinement prompt
+│   │   └── hunt_draft_detection.md     # AI SIEM/YARA rules drafting prompt
 │   └── scrapers/               # trafilatura-based URL fetcher
 │
 └── reporting/

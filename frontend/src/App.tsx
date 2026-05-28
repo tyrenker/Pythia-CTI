@@ -18,6 +18,8 @@ import { Analytics } from './pages/Analytics'
 import { Watchlist } from './pages/Watchlist'
 import { Docs } from './pages/Docs'
 import { RecentArticles } from './pages/RecentArticles'
+import { HuntList } from './pages/HuntList'
+import { HuntWorkbench } from './pages/HuntWorkbench'
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
           <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/articles" element={<RecentArticles />} />
+          <Route path="/hunt" element={<HuntList />} />
+          <Route path="/hunt/:id" element={<HuntWorkbench />} />
         </Routes>
       </Shell>
     </BrowserRouter>
