@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { BarChart2, Globe, ShieldAlert, Users } from 'lucide-react'
 import { useActors } from '@/api/actors'
+import { useDashboardSummary } from '@/api/analytics'
 import { DataTable } from '@/components/shared/DataTable'
+import { FilterBar } from '@/components/shared/FilterBar'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { ResultCount } from '@/components/shared/ResultCount'
+import { StatStrip } from '@/components/shared/StatStrip'
 import { cn } from '@/lib/utils'
 import { SPONSOR_COLORS } from '@/lib/constants'
 import type { ActorSummary } from '@/types/api'
 
 const SPONSOR_TYPES = [
-  { value: '', label: 'All' },
+  { value: '', label: 'All sponsors' },
   { value: 'nation-state', label: 'Nation-state' },
   { value: 'financially-motivated', label: 'Financially motivated' },
   { value: 'hacktivist', label: 'Hacktivist' },
@@ -32,6 +37,47 @@ export function Actors() {
     offset: page * PAGE_SIZE,
   })
 
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
+
+  const totalActors = summary
+    ? Object.values(summary.actor_by_sponsor).reduce((a, b) => a + b, 0)
+    : undefined
+  const nationStateCount = summary?.actor_by_sponsor['nation-state'] ?? 0
+  const nationStatePct = totalActors ? Math.round((nationStateCount / totalActors) * 100) : 0
+  const finMotCount = summary?.actor_by_sponsor['financially-motivated'] ?? 0
+  const hacktivistCount = summary?.actor_by_sponsor['hacktivist'] ?? 0
+
+  const activeFilterCount = [search, country, sponsorType].filter(Boolean).length
+
+  function clearFilters() {
+    setSearch('')
+    setCountry('')
+    setSponsorType('')
+    setPage(0)
+  }
+
+  const stats = [
+    { label: 'Total Actors', value: totalActors ?? '—', icon: Users },
+    {
+      label: 'Nation-State',
+      value: totalActors ? `${nationStatePct}%` : '—',
+      color: 'text-purple-400',
+      icon: ShieldAlert,
+    },
+    {
+      label: 'Financially Motivated',
+      value: finMotCount || '—',
+      color: 'text-amber-400',
+      icon: BarChart2,
+    },
+    {
+      label: 'Hacktivist',
+      value: hacktivistCount || '—',
+      color: 'text-red-400',
+      icon: Globe,
+    },
+  ]
+
   const columns = [
     {
       key: 'name',
@@ -45,9 +91,14 @@ export function Actors() {
       key: 'country_code',
       header: 'Country',
       sortable: true,
-      render: (a: ActorSummary) => (
-        <span className="font-mono text-xs text-text-muted">{a.country_code ?? '—'}</span>
-      ),
+      render: (a: ActorSummary) =>
+        a.country_code ? (
+          <span className="inline-flex items-center rounded-md bg-bg-elevated px-2 py-0.5 font-mono text-xs font-semibold text-text-primary">
+            {a.country_code}
+          </span>
+        ) : (
+          <span className="text-text-muted">—</span>
+        ),
     },
     {
       key: 'sponsor_type',
@@ -56,7 +107,7 @@ export function Actors() {
       render: (a: ActorSummary) => (
         <span
           className={cn(
-            'inline-flex rounded px-1.5 py-0.5 text-xs font-medium',
+            'inline-flex rounded-md px-2.5 py-1 text-xs font-medium',
             SPONSOR_COLORS[a.sponsor_type] ?? 'bg-zinc-800 text-zinc-300',
           )}
         >
@@ -68,7 +119,9 @@ export function Actors() {
       key: 'ttps',
       header: 'Techniques',
       render: (a: ActorSummary) => (
-        <span className="text-text-muted">{a.ttp_count} TTP(s)</span>
+        <span className="inline-flex items-center rounded-full bg-bg-elevated px-2.5 py-0.5 text-xs font-semibold text-text-muted">
+          {a.ttp_count}
+        </span>
       ),
     },
     {
@@ -77,7 +130,6 @@ export function Actors() {
       sortable: true,
       render: (a: ActorSummary) => {
         if (a.sophistication == null) return <span className="text-text-muted">—</span>
-        // Score is 1-10; map to 5 dots by dividing by 2
         const filled = Math.round(a.sophistication / 2)
         return (
           <span className="flex gap-0.5" title={`${a.sophistication}/10`}>
@@ -97,33 +149,40 @@ export function Actors() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-semibold text-text-primary">Threat Actors</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(0) }}
-            placeholder="Search by name..."
-            className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-          />
-          <input
-            value={country}
-            onChange={e => { setCountry(e.target.value.toUpperCase()); setPage(0) }}
-            placeholder="Country (US, RU...)"
-            maxLength={2}
-            className="w-28 rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-          />
-          <select
-            value={sponsorType}
-            onChange={e => { setSponsorType(e.target.value); setPage(0) }}
-            className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary focus:outline-none"
-          >
-            {SPONSOR_TYPES.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <PageHeader
+        title="Threat Actors"
+        description="Pre-seeded from MISP Galaxy and MITRE ATT&CK adversary clusters."
+      />
+
+      <StatStrip stats={stats} loading={summaryLoading} />
+
+      <FilterBar
+        activeCount={activeFilterCount}
+        onClearFilters={clearFilters}
+      >
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0) }}
+          placeholder="Search by name..."
+          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+        />
+        <input
+          value={country}
+          onChange={e => { setCountry(e.target.value.toUpperCase()); setPage(0) }}
+          placeholder="Country (US, RU...)"
+          maxLength={2}
+          className="w-28 rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+        />
+        <select
+          value={sponsorType}
+          onChange={e => { setSponsorType(e.target.value); setPage(0) }}
+          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+        >
+          {SPONSOR_TYPES.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </FilterBar>
 
       <div className="rounded-xl border border-[#2a2a3e] bg-bg-surface">
         <DataTable
@@ -136,24 +195,15 @@ export function Actors() {
         />
       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-text-muted">
-        <button
-          onClick={() => setPage(p => Math.max(0, p - 1))}
-          disabled={page === 0}
-          className="flex items-center gap-1 disabled:opacity-40 hover:text-text-primary"
-        >
-          <ChevronLeft size={14} /> Prev
-        </button>
-        <span>Page {page + 1}</span>
-        <button
-          onClick={() => setPage(p => p + 1)}
-          disabled={(data?.length ?? 0) < PAGE_SIZE}
-          className="flex items-center gap-1 disabled:opacity-40 hover:text-text-primary"
-        >
-          Next <ChevronRight size={14} />
-        </button>
-      </div>
+      <ResultCount
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={activeFilterCount === 0 ? totalActors : undefined}
+        pageItemCount={data?.length ?? 0}
+        onPrev={() => setPage(p => Math.max(0, p - 1))}
+        onNext={() => setPage(p => p + 1)}
+        noun="actors"
+      />
     </div>
   )
 }

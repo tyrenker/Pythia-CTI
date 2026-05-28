@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Trash2, Zap } from 'lucide-react'
+import { Bell, Trash2, Zap } from 'lucide-react'
 import { useWatchlist, useCreateSubscription, useDeleteSubscription, useTestSubscription } from '@/api/watchlist'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { timeAgo } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 const WEBHOOK_TYPES = ['slack', 'discord', 'generic'] as const
+
 const WEBHOOK_COLORS: Record<string, string> = {
-  slack: 'bg-green-900 text-green-300',
-  discord: 'bg-indigo-900 text-indigo-300',
+  slack: 'bg-green-900/40 text-green-300',
+  discord: 'bg-indigo-900/40 text-indigo-300',
   generic: 'bg-zinc-800 text-zinc-300',
 }
 
@@ -35,7 +37,8 @@ export function Watchlist() {
   }
 
   function handleCreate() {
-    const filterValue = filterTab === 'actor' ? filterActor : filterTab === 'ttp' ? filterTtp : filterSector
+    const filterValue =
+      filterTab === 'actor' ? filterActor : filterTab === 'ttp' ? filterTtp : filterSector
     if (!filterValue.trim()) {
       setFormError('At least one filter field is required.')
       return
@@ -69,83 +72,117 @@ export function Watchlist() {
     )
   }
 
+  const isEmpty = !isLoading && (!subs || subs.length === 0)
+
   return (
     <div>
-      <h1 className="mb-6 text-lg font-semibold text-text-primary">Watchlist & Alerting</h1>
+      <PageHeader
+        title="Watchlist & Alerting"
+        description="Monitor threat actors, ATT&CK techniques, or sectors. Get instant alerts when Pythia ingests matching intelligence."
+      />
+
+      {/* Feature explainer — shown only when no subscriptions */}
+      {isEmpty && (
+        <div className="mb-6 rounded-xl border border-accent/30 bg-accent/5 p-6">
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-accent/20 p-3">
+              <Bell size={20} className="text-accent-bright" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary">No subscriptions yet</h3>
+              <p className="mt-1 text-xs text-text-muted leading-relaxed">
+                Monitor specific threat actors, ATT&CK techniques, or industry sectors. Get instant
+                alerts when Pythia ingests matching intelligence — delivered to Slack, Discord, or
+                any webhook endpoint.
+              </p>
+              <p className="mt-3 text-xs text-text-muted">
+                Use the form below to create your first alert subscription.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Subscriptions table */}
-        <div className="rounded-xl border border-[#2a2a3e] bg-bg-surface">
+        {/* Subscriptions — cards when data, loading state otherwise */}
+        <div>
           {isLoading ? (
-            <div className="p-4 space-y-2">
-              {[1, 2, 3].map(i => <div key={i} className="h-10 animate-pulse rounded bg-bg-elevated" />)}
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-24 animate-pulse rounded-xl bg-bg-surface" />
+              ))}
             </div>
-          ) : !subs?.length ? (
-            <div className="py-16 text-center text-xs text-text-muted">
-              No subscriptions yet. Create one using the form.
+          ) : subs && subs.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {subs.map(sub => {
+                const trigger = sub.filter_actor
+                  ? `Actor: ${sub.filter_actor}`
+                  : sub.filter_ttp
+                  ? `TTP: ${sub.filter_ttp}`
+                  : sub.filter_sector
+                  ? `Sector: ${sub.filter_sector}`
+                  : '—'
+                return (
+                  <div
+                    key={sub.id}
+                    className="rounded-xl border border-[#2a2a3e] bg-bg-surface p-4"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500" title="Active" />
+                        <span className="text-sm font-medium text-text-primary">{sub.name}</span>
+                      </div>
+                      <span
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-xs',
+                          WEBHOOK_COLORS[sub.webhook_type] ?? 'bg-zinc-800 text-zinc-300',
+                        )}
+                      >
+                        {sub.webhook_type}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted">{trigger}</p>
+                    <p
+                      className="mt-1 max-w-full truncate text-xs text-text-muted"
+                      title={sub.webhook_url}
+                    >
+                      {sub.webhook_url}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-xs text-text-muted">
+                        Created {timeAgo(sub.created_at)}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            testMutation.mutate(sub.id, {
+                              onSuccess: () => showToast('Test sent!', 'success'),
+                              onError: (e: Error) => showToast(e.message, 'error'),
+                            })
+                          }
+                          title="Test webhook"
+                          className="rounded p-1 text-text-muted transition-colors hover:text-accent-bright"
+                        >
+                          <Zap size={14} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            deleteMutation.mutate(sub.id, {
+                              onSuccess: () => showToast('Deleted.', 'success'),
+                            })
+                          }
+                          title="Delete"
+                          className="rounded p-1 text-text-muted transition-colors hover:text-red-400"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-[#2a2a3e]">
-                  {['Name', 'Trigger', 'Webhook', 'Type', 'Created', ''].map(h => (
-                    <th key={h} className="px-3 py-2 text-left font-medium text-text-muted">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {subs.map(sub => {
-                  const trigger = sub.filter_actor
-                    ? `Actor: ${sub.filter_actor}`
-                    : sub.filter_ttp
-                    ? `TTP: ${sub.filter_ttp}`
-                    : sub.filter_sector
-                    ? `Sector: ${sub.filter_sector}`
-                    : '—'
-                  return (
-                    <tr key={sub.id} className="border-b border-[#2a2a3e]">
-                      <td className="px-3 py-2 font-medium text-text-primary">{sub.name}</td>
-                      <td className="px-3 py-2 text-text-muted">{trigger}</td>
-                      <td className="px-3 py-2 text-text-muted max-w-[160px] truncate">{sub.webhook_url}</td>
-                      <td className="px-3 py-2">
-                        <span className={cn('rounded px-1.5 py-0.5 text-xs', WEBHOOK_COLORS[sub.webhook_type] ?? 'bg-zinc-800 text-zinc-300')}>
-                          {sub.webhook_type}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-text-muted">{timeAgo(sub.created_at)}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              testMutation.mutate(sub.id, {
-                                onSuccess: () => showToast('Test sent!', 'success'),
-                                onError: (e: Error) => showToast(e.message, 'error'),
-                              })
-                            }
-                            title="Test webhook"
-                            className="text-text-muted hover:text-accent-bright"
-                          >
-                            <Zap size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              deleteMutation.mutate(sub.id, {
-                                onSuccess: () => showToast('Deleted.', 'success'),
-                              })
-                            }
-                            title="Delete"
-                            className="text-text-muted hover:text-red-400"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
+          ) : null}
         </div>
 
         {/* Create form */}
@@ -154,7 +191,7 @@ export function Watchlist() {
 
           <div className="space-y-3">
             <div>
-              <label className="block mb-1 text-xs text-text-muted">Name</label>
+              <label className="mb-1 block text-xs text-text-muted">Name</label>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -164,15 +201,18 @@ export function Watchlist() {
             </div>
 
             <div>
-              <label className="block mb-1 text-xs text-text-muted">Filter type</label>
-              <div className="flex gap-2 mb-2">
+              <label className="mb-1 block text-xs text-text-muted">Filter type</label>
+              <div className="mb-2 flex gap-1 rounded-lg border border-[#2a2a3e] bg-bg-elevated p-0.5">
                 {(['actor', 'ttp', 'sector'] as FilterTab[]).map(t => (
                   <button
                     key={t}
                     onClick={() => setFilterTab(t)}
-                    className={`rounded px-2.5 py-1 text-xs capitalize transition-colors ${
-                      filterTab === t ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'
-                    }`}
+                    className={cn(
+                      'flex-1 rounded-md px-2 py-1 text-xs capitalize transition-colors',
+                      filterTab === t
+                        ? 'bg-accent text-white'
+                        : 'text-text-muted hover:text-text-primary',
+                    )}
                   >
                     {t}
                   </button>
@@ -205,7 +245,7 @@ export function Watchlist() {
             </div>
 
             <div>
-              <label className="block mb-1 text-xs text-text-muted">Webhook URL</label>
+              <label className="mb-1 block text-xs text-text-muted">Webhook URL</label>
               <input
                 value={webhookUrl}
                 onChange={e => setWebhookUrl(e.target.value)}
@@ -215,7 +255,7 @@ export function Watchlist() {
             </div>
 
             <div>
-              <label className="block mb-1 text-xs text-text-muted">Webhook type</label>
+              <label className="mb-1 block text-xs text-text-muted">Webhook type</label>
               <select
                 value={webhookType}
                 onChange={e => setWebhookType(e.target.value as typeof WEBHOOK_TYPES[number])}
@@ -227,14 +267,12 @@ export function Watchlist() {
               </select>
             </div>
 
-            {formError && (
-              <p className="text-xs text-red-400">{formError}</p>
-            )}
+            {formError && <p className="text-xs text-red-400">{formError}</p>}
 
             <button
               onClick={handleCreate}
               disabled={createMutation.isPending}
-              className="w-full rounded-lg bg-accent py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full rounded-lg bg-accent py-2 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {createMutation.isPending ? 'Creating…' : 'Create Subscription'}
             </button>
@@ -246,7 +284,7 @@ export function Watchlist() {
       {toast && (
         <div
           className={cn(
-            'fixed bottom-6 right-6 rounded-lg px-4 py-2 text-xs font-medium shadow-lg',
+            'fixed bottom-6 right-6 z-50 rounded-lg px-4 py-2 text-xs font-medium shadow-lg',
             toast.type === 'success' ? 'bg-green-800 text-green-200' : 'bg-red-800 text-red-200',
           )}
         >

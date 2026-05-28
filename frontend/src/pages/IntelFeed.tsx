@@ -29,6 +29,7 @@ function SourceHealthDot({ source }: { source: FeedSource }) {
   if (source.last_error) return <span className="inline-block h-2 w-2 rounded-full bg-red-500" title={source.last_error} />
   if (!source.last_polled_at) return <span className="inline-block h-2 w-2 rounded-full bg-[#2a2a3e]" title="Never polled" />
   const hoursAgo = (Date.now() - new Date(source.last_polled_at).getTime()) / 3_600_000
+  if (hoursAgo < 1) return <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-green-500" title={`Polled ${timeAgo(source.last_polled_at)}`} />
   if (hoursAgo < 5) return <span className="inline-block h-2 w-2 rounded-full bg-green-500" title={`Polled ${timeAgo(source.last_polled_at)}`} />
   return <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" title={`Polled ${timeAgo(source.last_polled_at)}`} />
 }
@@ -298,11 +299,21 @@ function SourcesSidebar() {
   const { data: sources } = useFeedSources()
   const toggle = useToggleSource()
 
+  const activeCount = (sources ?? []).filter(s => s.active).length
+  const totalCount = sources?.length ?? 0
+
   return (
     <div className="w-56 shrink-0">
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
-        Feed Sources
-      </h2>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+          Feed Sources
+        </h2>
+        {totalCount > 0 && (
+          <span className="text-xs text-text-muted">
+            <span className="text-green-400">{activeCount}</span>/{totalCount} active
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         {(sources ?? []).map(s => (
           <div

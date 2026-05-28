@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Database, LayoutGrid, ShieldCheck } from 'lucide-react'
 import { useTTPs } from '@/api/ttps'
+import { useDashboardSummary } from '@/api/analytics'
 import { DataTable } from '@/components/shared/DataTable'
+import { FilterBar } from '@/components/shared/FilterBar'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { ResultCount } from '@/components/shared/ResultCount'
+import { StatStrip } from '@/components/shared/StatStrip'
 import { useDebounce } from '@/hooks/useDebounce'
+import { cn } from '@/lib/utils'
 import type { AttckTechnique } from '@/types/api'
 
 const TACTICS = [
@@ -13,13 +19,30 @@ const TACTICS = [
   'exfiltration', 'impact',
 ]
 
-// Backend domain values are lowercase; ATLAS is a separate model at /v1/ai-threats/atlas
+const TACTIC_LABELS: Record<string, string> = {
+  'reconnaissance': 'Recon',
+  'resource-development': 'Resource Dev',
+  'initial-access': 'Initial Access',
+  'execution': 'Execution',
+  'persistence': 'Persistence',
+  'privilege-escalation': 'Priv Esc',
+  'defense-evasion': 'Def Evasion',
+  'credential-access': 'Cred Access',
+  'discovery': 'Discovery',
+  'lateral-movement': 'Lateral Move',
+  'collection': 'Collection',
+  'command-and-control': 'C2',
+  'exfiltration': 'Exfiltration',
+  'impact': 'Impact',
+}
+
 const DOMAINS = [
   { value: '', label: 'All domains' },
   { value: 'enterprise', label: 'Enterprise' },
   { value: 'mobile', label: 'Mobile' },
   { value: 'ics', label: 'ICS' },
 ]
+
 const PAGE_SIZE = 50
 
 export function Ttps() {
@@ -37,6 +60,13 @@ export function Ttps() {
     offset: page * PAGE_SIZE,
   })
 
+  const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
+
+  const tacticCounts = summary?.ttp_by_tactic ?? {}
+  const totalTechniques = summary?.technique_count ?? 0
+  const tacticsCovered = Object.keys(tacticCounts).length
+  const maxCount = Math.max(...Object.values(tacticCounts), 1)
+
   const filtered = (data ?? []).filter(t => {
     if (!debouncedSearch) return true
     return (
@@ -45,6 +75,40 @@ export function Ttps() {
     )
   })
 
+  const activeFilterCount = [search, tactic, domain].filter(Boolean).length
+
+  function clearFilters() {
+    setSearch('')
+    setTactic('')
+    setDomain('')
+    setPage(0)
+  }
+
+  const stats = [
+    {
+      label: 'Techniques',
+      value: totalTechniques || '—',
+      icon: Database,
+    },
+    {
+      label: 'Tactics Covered',
+      value: tacticsCovered || '—',
+      color: 'text-purple-400',
+      icon: LayoutGrid,
+    },
+    {
+      label: 'Domains',
+      value: 3,
+      color: 'text-cyan-400',
+      icon: ShieldCheck,
+    },
+    {
+      label: 'ATT&CK + ATLAS',
+      value: 'Enterprise, Mobile, ICS',
+      color: 'text-text-muted',
+    },
+  ]
+
   const columns = [
     {
       key: 'technique_id',
@@ -52,9 +116,12 @@ export function Ttps() {
       sortable: true,
       render: (t: AttckTechnique) => (
         <span
-          className={`font-mono text-xs font-medium ${
-            t.technique_id.startsWith('AML') ? 'text-cyan-300' : 'text-purple-300'
-          }`}
+          className={cn(
+            'rounded-md px-2 py-0.5 font-mono text-sm font-bold',
+            t.technique_id.startsWith('AML')
+              ? 'bg-cyan-900/40 text-cyan-300'
+              : 'bg-purple-900/40 text-purple-300',
+          )}
         >
           {t.technique_id}
         </span>
@@ -64,13 +131,27 @@ export function Ttps() {
       key: 'name',
       header: 'Name',
       sortable: true,
-      render: (t: AttckTechnique) => <span className="text-text-primary">{t.name}</span>,
+      render: (t: AttckTechnique) => (
+        <span className="font-medium text-text-primary">{t.name}</span>
+      ),
     },
     {
       key: 'tactics',
       header: 'Tactic(s)',
       render: (t: AttckTechnique) => (
-        <span className="text-text-muted">{t.tactics.slice(0, 2).join(', ')}</span>
+        <div className="flex flex-wrap gap-1">
+          {t.tactics.slice(0, 3).map(tc => (
+            <span
+              key={tc}
+              className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs text-text-muted"
+            >
+              {TACTIC_LABELS[tc] ?? tc}
+            </span>
+          ))}
+          {t.tactics.length > 3 && (
+            <span className="text-xs text-text-muted">+{t.tactics.length - 3}</span>
+          )}
+        </div>
       ),
     },
     {
@@ -78,39 +159,86 @@ export function Ttps() {
       header: 'Domain',
       sortable: true,
       render: (t: AttckTechnique) => (
-        <span className="text-text-muted">{t.domain}</span>
+        <span className="rounded bg-bg-elevated px-1.5 py-0.5 text-xs text-text-muted capitalize">
+          {t.domain}
+        </span>
       ),
     },
   ]
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-lg font-semibold text-text-primary">Techniques (TTPs)</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(0) }}
-            placeholder="Search ID or name..."
-            className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-          />
-          <select
-            value={tactic}
-            onChange={e => { setTactic(e.target.value); setPage(0) }}
-            className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary focus:outline-none"
-          >
-            <option value="">All tactics</option>
-            {TACTICS.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select
-            value={domain}
-            onChange={e => { setDomain(e.target.value); setPage(0) }}
-            className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary focus:outline-none"
-          >
-            {DOMAINS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-          </select>
+      <PageHeader
+        title="ATT&CK Techniques (TTPs)"
+        description="MITRE ATT&CK Enterprise, Mobile, and ICS domains plus ATLAS AI adversarial techniques."
+      />
+
+      <StatStrip stats={stats} loading={summaryLoading} />
+
+      {/* Tactic heatmap */}
+      {Object.keys(tacticCounts).length > 0 && (
+        <div className="mb-6 overflow-x-auto rounded-xl border border-[#2a2a3e] bg-bg-surface px-4 py-3">
+          <p className="mb-2 text-xs font-medium text-text-muted">Technique density by tactic — click to filter</p>
+          <div className="flex flex-wrap gap-2">
+            {TACTICS.map(t => {
+              const count = tacticCounts[t] ?? 0
+              const intensity = count / maxCount
+              const isActive = tactic === t
+              return (
+                <button
+                  key={t}
+                  onClick={() => { setTactic(isActive ? '' : t); setPage(0) }}
+                  title={`${t}: ${count} techniques`}
+                  className={cn(
+                    'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                    isActive
+                      ? 'border-accent-bright bg-accent-bright/20 text-accent-bright'
+                      : intensity > 0.6
+                      ? 'border-purple-700 bg-purple-900/60 text-purple-200 hover:border-purple-500'
+                      : intensity > 0.3
+                      ? 'border-purple-800 bg-purple-900/30 text-purple-300 hover:border-purple-600'
+                      : count > 0
+                      ? 'border-[#2a2a3e] bg-bg-elevated text-text-muted hover:text-text-primary'
+                      : 'border-[#2a2a3e] bg-bg-elevated text-[#3a3a5e] cursor-default',
+                  )}
+                >
+                  {TACTIC_LABELS[t] ?? t}
+                  {count > 0 && (
+                    <span className="ml-1.5 text-[10px] opacity-70">{count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      <FilterBar
+        activeCount={activeFilterCount}
+        onClearFilters={clearFilters}
+      >
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0) }}
+          placeholder="Search ID or name..."
+          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+        />
+        <select
+          value={tactic}
+          onChange={e => { setTactic(e.target.value); setPage(0) }}
+          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+        >
+          <option value="">All tactics</option>
+          {TACTICS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select
+          value={domain}
+          onChange={e => { setDomain(e.target.value); setPage(0) }}
+          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+        >
+          {DOMAINS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+        </select>
+      </FilterBar>
 
       <div className="rounded-xl border border-[#2a2a3e] bg-bg-surface">
         <DataTable
@@ -123,23 +251,15 @@ export function Ttps() {
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-text-muted">
-        <button
-          onClick={() => setPage(p => Math.max(0, p - 1))}
-          disabled={page === 0}
-          className="flex items-center gap-1 disabled:opacity-40 hover:text-text-primary"
-        >
-          <ChevronLeft size={14} /> Prev
-        </button>
-        <span>Page {page + 1}</span>
-        <button
-          onClick={() => setPage(p => p + 1)}
-          disabled={(data?.length ?? 0) < PAGE_SIZE}
-          className="flex items-center gap-1 disabled:opacity-40 hover:text-text-primary"
-        >
-          Next <ChevronRight size={14} />
-        </button>
-      </div>
+      <ResultCount
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={activeFilterCount === 0 ? (totalTechniques || undefined) : undefined}
+        pageItemCount={filtered.length}
+        onPrev={() => setPage(p => Math.max(0, p - 1))}
+        onNext={() => setPage(p => p + 1)}
+        noun="techniques"
+      />
     </div>
   )
 }
