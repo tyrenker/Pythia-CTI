@@ -17,6 +17,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
@@ -32,6 +33,7 @@ const INTELLIGENCE_ITEMS = [
 ]
 
 const DEFENSE_ITEMS = [
+  { to: '/hunt', label: 'Hunt', icon: Target },
   { to: '/rules', label: 'Rules', icon: Code2 },
   { to: '/malware', label: 'Malware', icon: Bug },
   { to: '/ai-threats', label: 'AI Threats', icon: Bot },
