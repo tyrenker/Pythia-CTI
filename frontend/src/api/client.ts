@@ -32,5 +32,17 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete(path: string): Promise<void> {
-  await apiFetch<unknown>(path, { method: 'DELETE' })
+  const key = getApiKey()
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(key ? { 'X-API-Key': key } : {}),
+  }
+  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE', headers })
+  if (!res.ok) {
+    const body = await res.text()
+    let detail: unknown = body
+    try { detail = JSON.parse(body)?.detail ?? body } catch { /* raw text */ }
+    throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail))
+  }
+  // 204 No Content — nothing to parse
 }

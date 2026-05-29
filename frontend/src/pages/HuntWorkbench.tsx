@@ -1,15 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   ArrowLeft, Plus, Trash2, Sparkles, FileText, Eye, Edit3,
   ChevronDown, ChevronUp, Shield, Target, Wrench,
-  CheckCircle, Loader2, Brain, Zap, ExternalLink, Copy, Check,
+  CheckCircle, Loader2, Brain, Zap, ExternalLink, Download,
 } from 'lucide-react'
+import { CodeBlock } from '@/components/shared/CodeBlock'
 import {
   useHunt, useUpdateHunt, useAddObservation, useRemoveObservation,
   useHuntNotes, useUpsertNotes, useHuntDetections, useDraftDetection,
   useUpdateDetection, usePromoteDetection, useSuggestActors, useRefineHypothesis,
+  useCachedActorSuggestions, useCachedHypothesisRefinement,
+  exportHunt,
 } from '@/api/hunts'
 import { PYRAMID_COLORS, PYRAMID_TIERS, ADMIRALTY_SOURCE, ADMIRALTY_ACCURACY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -206,17 +210,10 @@ function DetectionCard({
   sessionId: string
 }) {
   const [expanded, setExpanded] = useState(false)
-  const [copied, setCopied] = useState(false)
   const updateDetection = useUpdateDetection(sessionId)
   const promoteDetection = usePromoteDetection(sessionId)
 
   const colorClasses = PYRAMID_COLORS[detection.pyramid_tier] ?? 'bg-zinc-800 text-zinc-300'
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(detection.content)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <div className="rounded-lg border border-[#2a2a3e] bg-bg-elevated">
@@ -243,15 +240,12 @@ function DetectionCard({
           {detection.rationale && (
             <p className="text-[11px] text-text-muted leading-relaxed italic">{detection.rationale}</p>
           )}
-          <div className="relative rounded-md bg-bg-base p-2">
-            <button
-              onClick={handleCopy}
-              className="absolute right-2 top-2 rounded p-1 text-text-muted hover:text-text-primary"
-            >
-              {copied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
-            </button>
-            <pre className="overflow-x-auto font-mono text-[10px] text-text-primary pr-6">{detection.content}</pre>
-          </div>
+          <CodeBlock
+            code={detection.content}
+            language={detection.rule_type}
+            title={detection.title}
+            expandable
+          />
           <div className="flex gap-2">
             {detection.status !== 'reviewed' && (
               <button
@@ -328,6 +322,146 @@ function RefinementPanel({ data }: { data: HypothesisRefinement }) {
   )
 }
 
+// ── Markdown component map ────────────────────────────────────────────────────
+
+const mdComponents: Components = {
+  h1: ({ children }) => (
+    <h1 className="mb-3 mt-6 text-sm font-bold text-text-primary first:mt-0 border-b border-[#2a2a3e] pb-2">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-2 mt-5 text-xs font-semibold text-text-primary uppercase tracking-wide text-accent-bright">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-1.5 mt-4 text-xs font-semibold text-text-primary">{children}</h3>
+  ),
+  p: ({ children }) => (
+    <p className="mb-3 text-xs leading-relaxed text-text-muted">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="mb-3 ml-4 space-y-1 list-disc marker:text-text-muted">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-3 ml-4 space-y-1 list-decimal marker:text-text-muted">{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li className="text-xs text-text-muted leading-relaxed">{children}</li>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-text-primary">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="italic text-text-muted">{children}</em>
+  ),
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-accent-bright hover:underline">
+      {children}
+    </a>
+  ),
+  hr: () => <hr className="my-4 border-[#2a2a3e]" />,
+  blockquote: ({ children }) => (
+    <blockquote className="my-3 border-l-2 border-accent pl-3 text-xs italic text-text-muted">
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children }) => (
+    <pre className="mb-3 overflow-x-auto rounded-lg border border-[#2a2a3e] bg-bg-base p-3 text-[11px] leading-relaxed">
+      {children}
+    </pre>
+  ),
+  code: ({ className, children }) => {
+    const isBlock = /language-/.test(className ?? '')
+    return isBlock ? (
+      <code className={`font-mono text-text-primary ${className ?? ''}`}>{children}</code>
+    ) : (
+      <code className="rounded bg-bg-elevated px-1 py-0.5 font-mono text-[11px] text-accent-bright">
+        {children}
+      </code>
+    )
+  },
+  table: ({ children }) => (
+    <div className="mb-3 overflow-x-auto rounded-lg border border-[#2a2a3e]">
+      <table className="w-full text-xs border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="border-b border-[#2a2a3e] bg-bg-elevated">{children}</thead>
+  ),
+  tbody: ({ children }) => (
+    <tbody className="divide-y divide-[#2a2a3e]">{children}</tbody>
+  ),
+  tr: ({ children }) => <tr className="transition-colors hover:bg-bg-elevated/50">{children}</tr>,
+  th: ({ children }) => (
+    <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 text-text-muted">{children}</td>
+  ),
+}
+
+// ── Export menu ───────────────────────────────────────────────────────────────
+
+function ExportMenu({ sessionId }: { sessionId: string }) {
+  const [open, setOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  async function doExport(format: 'markdown' | 'stix' | 'pdf', template?: 'executive' | 'technical') {
+    setOpen(false)
+    setExporting(true)
+    try {
+      await exportHunt(sessionId, format, template)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const items: { label: string; desc: string; fn: () => void }[] = [
+    { label: 'Markdown (.md)', desc: 'Full hunt notes + IOCs', fn: () => doExport('markdown') },
+    { label: 'STIX Bundle (.json)', desc: 'STIX 2.1 indicators & TTPs', fn: () => doExport('stix') },
+    { label: 'PDF — Executive', desc: 'High-level summary report', fn: () => doExport('pdf', 'executive') },
+    { label: 'PDF — Technical', desc: 'Full IOC/detection detail', fn: () => doExport('pdf', 'technical') },
+  ]
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        disabled={exporting}
+        className="flex items-center gap-1.5 rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-bg-elevated disabled:opacity-40"
+      >
+        {exporting ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} className="text-green-400" />}
+        Export
+        <ChevronDown size={10} className={cn('text-text-muted transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-30 mt-1 w-52 rounded-xl border border-[#2a2a3e] bg-bg-surface shadow-lg">
+          {items.map(item => (
+            <button
+              key={item.label}
+              onClick={item.fn}
+              className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left first:rounded-t-xl last:rounded-b-xl hover:bg-bg-elevated"
+            >
+              <span className="text-xs font-medium text-text-primary">{item.label}</span>
+              <span className="text-[10px] text-text-muted">{item.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main workbench ────────────────────────────────────────────────────────────
 
 export function HuntWorkbench() {
@@ -346,6 +480,10 @@ export function HuntWorkbench() {
   const refineHypo = useRefineHypothesis(id!)
   const updateHunt = useUpdateHunt(id!)
 
+  // Cached Claude results — survive navigation via React Query cache
+  const { data: actorSuggestions = null } = useCachedActorSuggestions(id!)
+  const { data: refinement = null } = useCachedHypothesisRefinement(id!)
+
   // Observation input state
   const [obsType, setObsType] = useState('ioc_ip')
   const [obsValue, setObsValue] = useState('')
@@ -357,10 +495,10 @@ export function HuntWorkbench() {
   const [noteMode, setNoteMode] = useState<'edit' | 'preview'>('edit')
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Right panel state
-  const [rightPanel, setRightPanel] = useState<'suggestions' | 'refine' | 'detections'>('detections')
-  const [actorSuggestions, setActorSuggestions] = useState<ActorSuggestionsResponse | null>(null)
-  const [refinement, setRefinement] = useState<HypothesisRefinement | null>(null)
+  // Right panel state — default to suggestions if cached results exist
+  const [rightPanel, setRightPanel] = useState<'suggestions' | 'refine' | 'detections'>(() =>
+    actorSuggestions ? 'suggestions' : 'detections'
+  )
   const [draftRuleType, setDraftRuleType] = useState('sigma')
 
   // Hypothesis editing
@@ -399,14 +537,12 @@ export function HuntWorkbench() {
 
   async function handleSuggestActors() {
     setRightPanel('suggestions')
-    const result = await suggestActors.mutateAsync()
-    setActorSuggestions(result)
+    await suggestActors.mutateAsync()
   }
 
   async function handleRefine() {
     setRightPanel('refine')
-    const result = await refineHypo.mutateAsync()
-    setRefinement(result)
+    await refineHypo.mutateAsync()
   }
 
   async function handleDraftDetection() {
@@ -482,7 +618,7 @@ export function HuntWorkbench() {
           </div>
         </div>
 
-        {/* Claude action buttons */}
+        {/* Claude action buttons + Export */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleSuggestActors}
@@ -500,6 +636,7 @@ export function HuntWorkbench() {
             {refineHypo.isPending ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} className="text-blue-400" />}
             Refine Hypothesis
           </button>
+          <ExportMenu sessionId={id!} />
         </div>
       </div>
 
@@ -638,17 +775,9 @@ export function HuntWorkbench() {
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
               {noteContent ? (
-                <div className="prose prose-invert prose-xs max-w-none
-                  prose-headings:text-text-primary prose-headings:font-semibold
-                  prose-p:text-text-muted prose-p:leading-relaxed
-                  prose-code:rounded prose-code:bg-bg-elevated prose-code:px-1 prose-code:text-xs prose-code:text-accent-bright
-                  prose-pre:bg-bg-base prose-pre:rounded-lg prose-pre:p-3
-                  prose-li:text-text-muted prose-li:marker:text-text-muted
-                  prose-strong:text-text-primary prose-em:text-text-muted
-                  prose-a:text-accent-bright prose-a:no-underline hover:prose-a:underline"
-                >
-                  <ReactMarkdown>{noteContent}</ReactMarkdown>
-                </div>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                  {noteContent}
+                </ReactMarkdown>
               ) : (
                 <p className="text-xs italic text-text-muted">Nothing written yet. Switch to Edit to start.</p>
               )}
