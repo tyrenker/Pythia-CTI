@@ -258,6 +258,7 @@ export interface MalwareFamily {
   references: string[]
   source: string
   source_url: string | null
+  mitre_id: string | null
   malpedia_slug: string | null
   created_at: string | null
 }

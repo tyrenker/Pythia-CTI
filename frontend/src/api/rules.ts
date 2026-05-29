@@ -6,6 +6,7 @@ interface ListRulesParams {
   rule_type?: string
   severity?: string
   technique_id?: string
+  source?: string
   limit?: number
   offset?: number
 }
@@ -35,6 +36,14 @@ export function useRules(params: ListRulesParams = {}) {
   return useQuery({
     queryKey: ['rules', qs],
     queryFn: () => apiFetch<DetectionRule[]>(`/rules${qs}`),
+  })
+}
+
+export function useRulesCount(params: Omit<ListRulesParams, 'limit' | 'offset'> = {}) {
+  const qs = buildQs(params)
+  return useQuery({
+    queryKey: ['rules', 'count', qs],
+    queryFn: () => apiFetch<{ total: number }>(`/rules/count${qs}`),
   })
 }
 

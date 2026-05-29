@@ -13,16 +13,17 @@ interface SyncStatusResponse {
 }
 
 const FEED_LABELS: Record<string, { label: string; schedule: string }> = {
-  attck:          { label: 'ATT&CK',        schedule: 'Manual' },
-  misp_galaxy:    { label: 'MISP Galaxy',   schedule: 'Manual' },
-  apt_sheet:      { label: 'APT Sheet',     schedule: 'Weekly' },
-  abuse_ch:       { label: 'abuse.ch',      schedule: 'Daily 02h' },
-  ipsum:          { label: 'IPsum',         schedule: 'Daily 03h' },
-  phishtank:      { label: 'PhishTank',     schedule: 'Daily 03h' },
-  malpedia:       { label: 'Malpedia',      schedule: 'Weekly' },
-  yara_rules:     { label: 'Yara-Rules',    schedule: 'Weekly' },
-  icewater:       { label: 'Icewater',      schedule: 'Weekly' },
-  signature_base: { label: 'signature-base', schedule: 'Weekly' },
+  attck:          { label: 'ATT&CK',           schedule: 'Manual' },
+  misp_galaxy:    { label: 'MISP Galaxy',       schedule: 'Manual' },
+  mitre_malware:  { label: 'ATT&CK Malware',    schedule: 'Manual' },
+  misp_malware:   { label: 'MISP Malpedia',     schedule: 'Manual' },
+  apt_sheet:      { label: 'APT Sheet',         schedule: 'Weekly' },
+  abuse_ch:       { label: 'abuse.ch',          schedule: 'Daily 02h' },
+  ipsum:          { label: 'IPsum',             schedule: 'Daily 03h' },
+  phishtank:      { label: 'PhishTank',         schedule: 'Daily 03h' },
+  yara_rules:     { label: 'Yara-Rules',        schedule: 'Weekly' },
+  icewater:       { label: 'Icewater',          schedule: 'Weekly' },
+  signature_base: { label: 'signature-base',    schedule: 'Weekly' },
 }
 
 function statusIcon(status: string) {

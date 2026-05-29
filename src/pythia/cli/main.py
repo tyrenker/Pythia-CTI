@@ -720,7 +720,7 @@ def list_owasp_llm(
 
 @list_app.command("malware")
 def list_malware(
-    malware_id: str = typer.Argument(None, help="Family ID, Malpedia slug, or name substring"),
+    malware_id: str = typer.Argument(None, help="Family ID, ATT&CK software ID (S0062), or name substring"),
     family_type: str = typer.Option(None, "--type", "-t", help="Filter by family type"),
     json_opt: bool = typer.Option(False, "--json", help="Output raw JSON"),
     output: str = typer.Option(None, "--output", "-o", help="Write JSON to file"),
@@ -735,12 +735,13 @@ def list_malware(
             family = (
                 session.get(MalwareFamily, malware_id)
                 or session.query(MalwareFamily).filter(
-                    (MalwareFamily.malpedia_slug == malware_id)
+                    (MalwareFamily.mitre_id == malware_id)
+                    | (MalwareFamily.malpedia_slug == malware_id)
                     | (MalwareFamily.name.ilike(f"%{malware_id}%"))
                 ).first()
             )
             if not family:
-                console.print(f"[red]Error: Malware family '{malware_id}' not found. Run 'pythia sync malpedia' first.[/red]")
+                console.print(f"[red]Error: Malware family '{malware_id}' not found. Run 'pythia sync mitre-malware' first.[/red]")
                 raise typer.Exit(code=1)
 
             data = {
@@ -754,7 +755,7 @@ def list_malware(
                 "references": family.references or [],
                 "source": family.source,
                 "source_url": family.source_url,
-                "malpedia_slug": family.malpedia_slug,
+                "mitre_id": family.mitre_id,
             }
 
             if json_opt or output:
@@ -773,7 +774,7 @@ def list_malware(
                     f"[bold]Name:[/bold] {family.name}\n"
                     f"[bold]Type:[/bold] {family.family_type or 'N/A'}\n"
                     f"[bold]Aliases:[/bold] {', '.join(family.aliases or []) or 'N/A'}\n"
-                    f"[bold]Malpedia Slug:[/bold] {family.malpedia_slug or 'N/A'}\n"
+                    f"[bold]ATT&CK ID:[/bold] {family.mitre_id or 'N/A'}\n"
                     f"[bold]Source:[/bold] {family.source} ({family.source_url or 'N/A'})\n\n"
                     f"[bold]Description:[/bold]\n{family.description or 'No description available.'}",
                     title=f"Malware Family: {family.name}",
@@ -787,7 +788,7 @@ def list_malware(
         families = query.order_by(MalwareFamily.name).limit(limit).all()
 
         if not families:
-            console.print("[yellow]No malware families found. Run 'pythia sync malpedia' first.[/yellow]")
+            console.print("[yellow]No malware families found. Run 'pythia sync mitre-malware' first.[/yellow]")
             return
 
         if json_opt or output:
@@ -795,7 +796,7 @@ def list_malware(
             data_list = [
                 {
                     "id": f.id, "name": f.name, "family_type": f.family_type,
-                    "aliases": f.aliases or [], "malpedia_slug": f.malpedia_slug,
+                    "aliases": f.aliases or [], "mitre_id": f.mitre_id,
                 }
                 for f in families
             ]
@@ -812,13 +813,13 @@ def list_malware(
             table.add_column("ID", style="cyan", width=8)
             table.add_column("Name", style="bold")
             table.add_column("Type", style="magenta")
-            table.add_column("Malpedia Slug")
+            table.add_column("ATT&CK ID")
             for f in families:
                 table.add_row(
                     f.id[:8],
                     f.name,
                     f.family_type or "—",
-                    f.malpedia_slug or "—",
+                    f.mitre_id or "—",
                 )
             console.print(table)
 
@@ -1162,16 +1163,17 @@ def sync(
         None,
         help=(
             "Sources to refresh (default: all core). "
-            "Core: attck, atlas, misp-galaxy, kev, owasp-llm, sigma, apt-sheet. "
-            "Optional: abuse-ch, ipsum, phishtank, malpedia, "
-            "sigma-full, yara-rules, icewater, signature-base"
+            "Core: attck, atlas, misp-galaxy, kev, owasp-llm, sigma, apt-sheet, "
+            "sigma-full, signature-base. "
+            "Optional: mitre-malware, misp-malware, abuse-ch, ipsum, phishtank, "
+            "yara-rules, icewater"
         ),
     ),
     dry_run: bool = typer.Option(False, help="Show what would change, don't write"),
 ) -> None:
     """Refresh threat intel data from upstream open-source sources.
 
-    Default sources pulled on 'pythia sync' (small, network-efficient):
+    Default sources pulled on 'pythia sync':
       attck          MITRE ATT&CK STIX bundle (Enterprise)
       atlas          MITRE ATLAS (AI/ML adversarial techniques)
       misp-galaxy    MISP Galaxy threat-actor cluster (~750 actor profiles)
@@ -1179,18 +1181,22 @@ def sync(
       owasp-llm      OWASP LLM Top 10 2025
       sigma          ~50 curated SigmaHQ rules covering top techniques
       apt-sheet      APT Groups, Operations & Tactics Google Sheet
+      sigma-full     Full SigmaHQ ruleset — thousands of rules incl. macOS/process_creation
+      signature-base Neo23x0/signature-base — hundreds of YARA + Sigma rules
 
     Optional sources (pass explicitly by name):
+      mitre-malware  MITRE ATT&CK software objects (~600 malware/tool families)
+      misp-malware   MISP Galaxy Malpedia cluster (~3 000 malware families, no key needed)
       abuse-ch       abuse.ch ThreatFox IoC feeds (daily auto-scheduled)
       ipsum          stamparm/ipsum aggregated IP blocklist
       phishtank      PhishTank phishing URLs (requires PHISHTANK_API_KEY)
-      malpedia       Malpedia malware family catalog (MALPEDIA_API_KEY for full data)
-      sigma-full     Full SigmaHQ ruleset (large download, thousands of rules)
       yara-rules     Yara-Rules/rules GitHub repository (large)
       icewater       SupportIntelligence/Icewater YARA rules (~12 800 rules)
-      signature-base Neo23x0/signature-base YARA + Sigma rules
     """
-    targets = sources or ["misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet", "intel-feeds"]
+    targets = sources or [
+        "misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet",
+        "intel-feeds", "sigma-full", "signature-base",
+    ]
     console.print(f"[bold cyan]Pythia sync[/bold cyan] — refreshing: {', '.join(targets)}\n")
     if dry_run:
         console.print("[dim]dry-run: counting records only, no DB writes[/dim]\n")

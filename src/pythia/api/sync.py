@@ -33,14 +33,16 @@ def get_sync_status(session: Session = Depends(get_session)) -> dict[str, Any]:
     default_feeds = [
         "attck",
         "misp_galaxy",
+        "mitre_malware",
+        "misp_malware",
         "apt_sheet",
         "abuse_ch",
         "ipsum",
         "phishtank",
-        "malpedia",
         "yara_rules",
         "icewater",
         "signature_base",
+        "sigma_full",
     ]
 
     # Check if optional feed keys are missing to set initial 'no_key' status

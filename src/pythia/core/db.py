@@ -35,9 +35,26 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, futu
 
 
 def init_db() -> None:
-    """Create all tables. Safe to call on every startup (no-op if tables exist)."""
+    """Create all tables and apply idempotent column migrations."""
     import pythia.models  # noqa: F401 — registers all ORM classes with metadata
     Base.metadata.create_all(bind=engine)
+    _migrate_columns()
+
+
+def _migrate_columns() -> None:
+    """Add any columns introduced after initial table creation (idempotent)."""
+    from sqlalchemy import text
+
+    migrations = [
+        "ALTER TABLE malware_families ADD COLUMN mitre_id VARCHAR",
+        "ALTER TABLE detection_rules ADD COLUMN source VARCHAR",
+    ]
+    with engine.begin() as conn:
+        for stmt in migrations:
+            try:
+                conn.execute(text(stmt))
+            except Exception:
+                pass  # column already exists
 
 
 def get_session() -> Iterator[Session]:

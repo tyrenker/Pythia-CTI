@@ -40,7 +40,6 @@ class Settings(BaseSettings):
     # Optional API keys for external intel feeds
     otx_api_key: str | None = Field(default=None, alias="OTX_API_KEY")
     phishtank_api_key: str | None = Field(default=None, alias="PHISHTANK_API_KEY")
-    malpedia_api_key: str | None = Field(default=None, alias="MALPEDIA_API_KEY")
 
     enable_scheduler: bool = Field(default=False, description="Start APScheduler background sync on API startup")
 

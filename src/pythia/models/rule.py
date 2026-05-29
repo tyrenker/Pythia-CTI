@@ -23,5 +23,6 @@ class DetectionRule(Base):
     actor_ids: Mapped[list] = mapped_column(JSON, default=list)
     severity: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str | None] = mapped_column(String, nullable=True)
+    source: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     source_url: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
