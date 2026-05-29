@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, X, Trash2, Edit2, Shield } from 'lucide-react'
-import { useRules, useCreateRule, useDeleteRule } from '@/api/rules'
+import { Plus, X, Trash2, Edit2, Shield, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRules, useRulesCount, useCreateRule, useDeleteRule } from '@/api/rules'
 import { useCoverage } from '@/api/analytics'
 import { SeverityBadge } from '@/components/shared/SeverityBadge'
 import { TechniqueTag } from '@/components/shared/TechniqueTag'
@@ -47,13 +47,87 @@ const YARA_PLACEHOLDER = `rule SuspiciousPowerShell {
         any of them
 }`
 
+const PAGE_SIZE = 50
+
+function Pagination({
+  page,
+  total,
+  pageSize,
+  onChange,
+}: {
+  page: number
+  total: number
+  pageSize: number
+  onChange: (p: number) => void
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const start = Math.min((page - 1) * pageSize + 1, total)
+  const end = Math.min(page * pageSize, total)
+
+  const pages: (number | '…')[] = []
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (page > 3) pages.push('…')
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
+    if (page < totalPages - 2) pages.push('…')
+    pages.push(totalPages)
+  }
+
+  return (
+    <div className="flex items-center justify-between border-t border-[#2a2a3e] px-4 py-3">
+      <span className="text-xs text-text-muted">
+        {total === 0 ? 'No results' : `Showing ${start}–${end} of ${total.toLocaleString()} rules`}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onChange(page - 1)}
+          disabled={page === 1}
+          className="rounded p-1 text-text-muted transition-colors hover:text-text-primary disabled:opacity-30"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        {pages.map((p, i) =>
+          p === '…' ? (
+            <span key={`ellipsis-${i}`} className="px-1 text-xs text-text-muted">…</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onChange(p as number)}
+              className={cn(
+                'min-w-[28px] rounded px-1.5 py-1 text-xs transition-colors',
+                p === page
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary',
+              )}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page === totalPages}
+          className="rounded p-1 text-text-muted transition-colors hover:text-text-primary disabled:opacity-30"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function Rules() {
   const navigate = useNavigate()
+  const [page, setPage] = useState(1)
   const [ruleType, setRuleType] = useState('')
   const [severity, setSeverity] = useState('')
   const [techniqueId, setTechniqueId] = useState('')
   const [ruleSource, setRuleSource] = useState('')
   const [showDrawer, setShowDrawer] = useState(false)
+
+  function resetPage() { setPage(1) }
 
   // Form state
   const [formType, setFormType] = useState<'sigma' | 'yara'>('sigma')
@@ -68,27 +142,34 @@ export function Rules() {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
-  const { data: rawData, isLoading } = useRules({
+  const filterParams = {
     rule_type: ruleType || undefined,
     severity: severity || undefined,
     technique_id: techniqueId || undefined,
+    source: ruleSource || undefined,
+  }
+
+  const { data, isLoading } = useRules({
+    ...filterParams,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   })
+
+  const { data: countData } = useRulesCount(filterParams)
+  const total = countData?.total ?? 0
+
+  const { data: sigmaCountData } = useRulesCount({ rule_type: 'sigma' })
+  const { data: yaraCountData } = useRulesCount({ rule_type: 'yara' })
 
   const { data: coverage } = useCoverage(1)
 
-  const data = ruleSource
-    ? (rawData ?? []).filter(r => r.source_url?.includes(ruleSource))
-    : rawData
-
-  // Severity distribution from loaded data
-  const severityCounts = (rawData ?? []).reduce<Record<string, number>>((acc, r) => {
+  // Severity distribution from current page
+  const severityCounts = (data ?? []).reduce<Record<string, number>>((acc, r) => {
     const s = r.severity ?? 'informational'
     acc[s] = (acc[s] ?? 0) + 1
     return acc
   }, {})
-  const totalLoaded = rawData?.length ?? 0
-  const sigmaCount = (rawData ?? []).filter(r => r.rule_type === 'sigma').length
-  const yaraCount = (rawData ?? []).filter(r => r.rule_type === 'yara').length
+  const totalLoaded = data?.length ?? 0
 
   const createMutation = useCreateRule()
   const deleteMutation = useDeleteRule()
@@ -143,26 +224,27 @@ export function Rules() {
     setRuleType('')
     setSeverity('')
     setRuleSource('')
+    resetPage()
   }
 
   const stats = [
     {
       label: 'Total Rules',
-      value: coverage?.rule_count ?? (totalLoaded || '—'),
+      value: total || coverage?.rule_count || '—',
       icon: Shield,
     },
     {
       label: 'Sigma',
-      value: sigmaCount || '—',
+      value: sigmaCountData?.total ?? '—',
       color: 'text-blue-400',
     },
     {
       label: 'YARA',
-      value: yaraCount || '—',
+      value: yaraCountData?.total ?? '—',
       color: 'text-orange-400',
     },
     {
-      label: 'Critical',
+      label: 'Critical (page)',
       value: severityCounts['critical'] || '—',
       color: 'text-red-400',
     },
@@ -340,13 +422,13 @@ export function Rules() {
       >
         <input
           value={techniqueId}
-          onChange={e => setTechniqueId(e.target.value)}
+          onChange={e => { setTechniqueId(e.target.value); resetPage() }}
           placeholder="Technique ID..."
           className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
         />
         <select
           value={ruleType}
-          onChange={e => setRuleType(e.target.value)}
+          onChange={e => { setRuleType(e.target.value); resetPage() }}
           className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
         >
           <option value="">All types</option>
@@ -355,7 +437,7 @@ export function Rules() {
         </select>
         <select
           value={severity}
-          onChange={e => setSeverity(e.target.value)}
+          onChange={e => { setSeverity(e.target.value); resetPage() }}
           className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
         >
           <option value="">All severities</option>
@@ -363,7 +445,7 @@ export function Rules() {
         </select>
         <select
           value={ruleSource}
-          onChange={e => setRuleSource(e.target.value)}
+          onChange={e => { setRuleSource(e.target.value); resetPage() }}
           className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
         >
           <option value="">All sources</option>
@@ -381,6 +463,7 @@ export function Rules() {
           onRowClick={r => navigate(`/rules/${r.rule_type}/${r.id}`)}
           keyFn={r => r.id}
         />
+        <Pagination page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {/* Success toast */}

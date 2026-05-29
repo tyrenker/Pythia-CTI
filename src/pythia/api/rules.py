@@ -49,22 +49,49 @@ class RuleDetail(RuleSummary):
     actor_ids: list[str] = Field(default_factory=list)
 
 
+def _apply_rule_filters(
+    q: object,
+    rule_type: str | None,
+    technique_id: str | None,
+    severity: str | None,
+    source: str | None,
+) -> object:
+    from sqlalchemy.orm import Query as SAQuery
+    q2: SAQuery = q  # type: ignore[assignment]
+    if rule_type:
+        q2 = q2.filter(DetectionRule.rule_type == rule_type.lower())
+    if severity:
+        q2 = q2.filter(DetectionRule.severity == severity.lower())
+    if technique_id:
+        q2 = q2.filter(DetectionRule.technique_ids.contains(technique_id.upper()))
+    if source:
+        q2 = q2.filter(DetectionRule.source == source)
+    return q2
+
+
+@router.get("/count")
+async def count_rules(
+    rule_type: str | None = Query(default=None),
+    technique_id: str | None = Query(default=None),
+    severity: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+) -> dict[str, int]:
+    q = _apply_rule_filters(session.query(DetectionRule), rule_type, technique_id, severity, source)
+    return {"total": q.count()}
+
+
 @router.get("", response_model=list[RuleSummary])
 async def list_rules(
     rule_type: str | None = Query(default=None, description="Filter by type: sigma | yara"),
     technique_id: str | None = Query(default=None, description="Filter by linked ATT&CK technique ID"),
     severity: str | None = Query(default=None, description="Filter by severity"),
+    source: str | None = Query(default=None, description="Filter by source slug"),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ) -> list[RuleSummary]:
-    q = session.query(DetectionRule)
-    if rule_type:
-        q = q.filter(DetectionRule.rule_type == rule_type.lower())
-    if severity:
-        q = q.filter(DetectionRule.severity == severity.lower())
-    if technique_id:
-        q = q.filter(DetectionRule.technique_ids.contains(technique_id.upper()))
+    q = _apply_rule_filters(session.query(DetectionRule), rule_type, technique_id, severity, source)
     rules = q.order_by(DetectionRule.title).offset(offset).limit(limit).all()
     return [
         RuleSummary(

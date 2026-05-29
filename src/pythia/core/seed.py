@@ -60,6 +60,7 @@ _DATA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data"
 
 SOURCES = {
     "misp-galaxy": "https://raw.githubusercontent.com/MISP/misp-galaxy/main/clusters/threat-actor.json",
+    "misp-malpedia": "https://raw.githubusercontent.com/MISP/misp-galaxy/main/clusters/malpedia.json",
     "attck-enterprise": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-14.1.json",
     "attck-mobile": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/mobile-attack/mobile-attack-14.1.json",
     "attck-ics": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/ics-attack/ics-attack-14.1.json",
@@ -523,6 +524,7 @@ def seed_sigma(session: Any, dry_run: bool) -> int:
                     actor_ids=[],
                     severity=level,
                     status=rule_status,
+                    source="sigma-local",
                     source_url="https://github.com/SigmaHQ/sigma",
                 )
             )
@@ -1242,7 +1244,10 @@ def dedup_attck_actors(session: Any, dry_run: bool) -> int:
 
 
 def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
-    targets = sources or ["misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet"]
+    targets = sources or [
+        "misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet",
+        "sigma-full", "signature-base",
+    ]
     print(
         f"Pythia seed pipeline {'(dry-run) ' if dry_run else ''}— targets: {', '.join(targets)}\n"
     )
@@ -1292,6 +1297,12 @@ def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
 
         if "phishtank" in targets:
             total += seed_phishtank(session, dry_run)
+
+        if "mitre-malware" in targets:
+            total += seed_mitre_malware(session, dry_run)
+
+        if "misp-malware" in targets:
+            total += seed_misp_malware(session, dry_run)
 
         if "malpedia" in targets:
             total += seed_malpedia(session, dry_run)
@@ -1478,17 +1489,239 @@ def seed_phishtank(session: Any, dry_run: bool) -> int:
     return added
 
 
+_FAMILY_TYPE_KEYWORDS: list[tuple[str, str]] = [
+    ("ransomware", "ransomware"),
+    ("wiper", "ransomware"),
+    ("remote access trojan", "trojan"),
+    (" rat ", "trojan"),
+    ("remote administration tool", "trojan"),
+    ("banking trojan", "trojan"),
+    ("trojan", "trojan"),
+    ("backdoor", "backdoor"),
+    ("rootkit", "backdoor"),
+    ("worm", "worm"),
+    ("loader", "loader"),
+    ("downloader", "loader"),
+    ("dropper", "loader"),
+    ("infostealer", "stealer"),
+    ("info-stealer", "stealer"),
+    ("credential stealer", "stealer"),
+    ("keylogger", "stealer"),
+    ("stealer", "stealer"),
+    ("botnet", "botnet"),
+    (" bot ", "botnet"),
+]
+
+_MISP_TYPE_MAP: dict[str, str] = {
+    "ransomware": "ransomware",
+    "rat": "trojan",
+    "remote access trojan": "trojan",
+    "banking trojan": "trojan",
+    "trojan": "trojan",
+    "backdoor": "backdoor",
+    "rootkit": "backdoor",
+    "worm": "worm",
+    "loader": "loader",
+    "dropper": "loader",
+    "downloader": "loader",
+    "stealer": "stealer",
+    "infostealer": "stealer",
+    "keylogger": "stealer",
+    "botnet": "botnet",
+    "bot": "botnet",
+}
+
+
+def _derive_family_type(text: str) -> str | None:
+    lower = text.lower()
+    for keyword, ftype in _FAMILY_TYPE_KEYWORDS:
+        if keyword in lower:
+            return ftype
+    return None
+
+
+def _ensure_mitre_id_column(session: Any) -> None:
+    """Add mitre_id column to malware_families if it doesn't exist (idempotent)."""
+    from sqlalchemy import text
+
+    try:
+        session.execute(text("ALTER TABLE malware_families ADD COLUMN mitre_id VARCHAR"))
+        session.commit()
+    except Exception:
+        session.rollback()
+
+
+def seed_mitre_malware(session: Any, dry_run: bool) -> int:
+    """Ingest malware/tool software objects from the MITRE ATT&CK STIX bundle."""
+    data = _fetch(SOURCES["attck-enterprise"], "MITRE ATT&CK software")
+    if not data:
+        return 0
+
+    if not dry_run:
+        _ensure_mitre_id_column(session)
+
+    objects: list[dict[str, Any]] = data.get("objects", [])
+    sw_objects = [o for o in objects if o.get("type") in ("malware", "tool")]
+
+    added = 0
+    seen_names: set[str] = set()
+    seen_mitre_ids: set[str] = set()
+
+    for obj in sw_objects:
+        name: str = (obj.get("name") or "").strip()
+        if not name:
+            continue
+
+        description: str = obj.get("description") or ""
+        aliases_raw: list[str] = obj.get("x_mitre_aliases") or []
+        aliases = [a for a in aliases_raw if a != name]
+
+        ext_refs: list[dict[str, Any]] = obj.get("external_references") or []
+        mitre_ref = next((r for r in ext_refs if r.get("source_name") == "mitre-attack"), None)
+        if not mitre_ref:
+            continue
+        mitre_id: str = mitre_ref.get("external_id") or ""
+        if not mitre_id:
+            continue
+
+        if mitre_id in seen_mitre_ids or name in seen_names:
+            continue
+
+        source_url = f"https://attack.mitre.org/software/{mitre_id}/"
+        other_refs = [r["url"] for r in ext_refs if r.get("source_name") != "mitre-attack" and r.get("url")]
+        family_type = _derive_family_type(description + " " + name)
+
+        if dry_run:
+            added += 1
+            seen_names.add(name)
+            seen_mitre_ids.add(mitre_id)
+            continue
+
+        try:
+            existing = (
+                session.query(MalwareFamily).filter_by(mitre_id=mitre_id).first()
+                or session.query(MalwareFamily).filter_by(name=name).first()
+            )
+            if existing:
+                if not existing.mitre_id:
+                    existing.mitre_id = mitre_id
+                if description and not existing.description:
+                    existing.description = description
+                if family_type and not existing.family_type:
+                    existing.family_type = family_type
+                if aliases and not existing.aliases:
+                    existing.aliases = aliases
+            else:
+                session.add(
+                    MalwareFamily(
+                        name=name,
+                        aliases=aliases,
+                        description=description,
+                        family_type=family_type,
+                        actor_ids=[],
+                        rule_ids=[],
+                        references=other_refs,
+                        source="mitre-attack",
+                        source_url=source_url,
+                        mitre_id=mitre_id,
+                    )
+                )
+                added += 1
+            session.flush()
+            seen_names.add(name)
+            seen_mitre_ids.add(mitre_id)
+        except Exception:
+            session.rollback()
+
+    if not dry_run:
+        session.commit()
+    print(f"  MITRE ATT&CK malware: {added} families added/updated")
+    _log_sync_status(session, "mitre_malware", "ok", dry_run)
+    return added
+
+
+def seed_misp_malware(session: Any, dry_run: bool) -> int:
+    """Ingest malware families from the MISP Galaxy Malpedia cluster."""
+    data = _fetch(SOURCES["misp-malpedia"], "MISP Galaxy malpedia cluster")
+    if not data:
+        return 0
+
+    if not dry_run:
+        _ensure_mitre_id_column(session)
+
+    values: list[dict[str, Any]] = data.get("values", [])
+    added = 0
+    seen_names: set[str] = set()
+
+    for entry in values:
+        raw_name: str = (entry.get("value") or "").strip()
+        if not raw_name:
+            continue
+        name = raw_name
+
+        if name in seen_names:
+            continue
+
+        description: str = entry.get("description") or ""
+        meta: dict[str, Any] = entry.get("meta") or {}
+        synonyms: list[str] = meta.get("synonyms") or []
+        refs: list[str] = [r for r in (meta.get("refs") or []) if r]
+
+        raw_types: list[str] = meta.get("type") or []
+        family_type: str | None = None
+        for t in raw_types:
+            mapped = _MISP_TYPE_MAP.get(t.lower().strip())
+            if mapped:
+                family_type = mapped
+                break
+        if not family_type:
+            family_type = _derive_family_type(description + " " + name)
+
+        if dry_run:
+            added += 1
+            seen_names.add(name)
+            continue
+
+        try:
+            existing = session.query(MalwareFamily).filter_by(name=name).first()
+            if existing:
+                if family_type and not existing.family_type:
+                    existing.family_type = family_type
+                if description and not existing.description:
+                    existing.description = description
+                if synonyms and not existing.aliases:
+                    existing.aliases = synonyms
+            else:
+                session.add(
+                    MalwareFamily(
+                        name=name,
+                        aliases=synonyms,
+                        description=description,
+                        family_type=family_type,
+                        actor_ids=[],
+                        rule_ids=[],
+                        references=refs,
+                        source="misp-galaxy",
+                        source_url=SOURCES["misp-malpedia"],
+                    )
+                )
+                added += 1
+            session.flush()
+            seen_names.add(name)
+        except Exception:
+            session.rollback()
+
+    if not dry_run:
+        session.commit()
+    print(f"  MISP Galaxy malpedia: {added} families added/updated")
+    _log_sync_status(session, "misp_malware", "ok", dry_run)
+    return added
+
+
 def seed_malpedia(session: Any, dry_run: bool) -> int:
-    """Ingest malware family records from Malpedia. Uses API key if MALPEDIA_API_KEY is set."""
-    from pythia.core.config import get_settings
-
-    settings = get_settings()
-    api_key = settings.malpedia_api_key
-
+    """Ingest malware family records from Malpedia (anonymous public access only)."""
     base_url = "https://malpedia.caad.fkie.fraunhofer.de"
     headers: dict[str, str] = {"User-Agent": "Pythia/0.1 (seed-builder)"}
-    if api_key:
-        headers["Authorization"] = f"apitoken {api_key}"
 
     print("  Fetching Malpedia family list...", end=" ", flush=True)
     req = urllib.request.Request(f"{base_url}/api/list/families", headers=headers)
@@ -1612,6 +1845,7 @@ def seed_sigma_full(session: Any, dry_run: bool) -> int:
                             actor_ids=[],
                             severity=level,
                             status=rule_status,
+                            source="sigma-full",
                             source_url="https://github.com/SigmaHQ/sigma",
                         )
                     )
@@ -1623,6 +1857,7 @@ def seed_sigma_full(session: Any, dry_run: bool) -> int:
         tmp_path.unlink(missing_ok=True)
 
     print(f"  SigmaHQ full: {added} rules added")
+    _log_sync_status(session, "sigma_full", "ok", dry_run)
     return added
 
 
@@ -1670,6 +1905,7 @@ def seed_yara_rules(session: Any, dry_run: bool) -> int:
                             actor_ids=[],
                             severity=None,
                             status="stable",
+                            source="yara-rules",
                             source_url="https://github.com/Yara-Rules/rules",
                         )
                     )
@@ -1729,6 +1965,7 @@ def seed_icewater(session: Any, dry_run: bool) -> int:
                             actor_ids=[],
                             severity=None,
                             status="stable",
+                            source="icewater",
                             source_url="https://github.com/SupportIntelligence/Icewater",
                         )
                     )
@@ -1811,6 +2048,7 @@ def seed_signature_base(session: Any, dry_run: bool) -> int:
                             actor_ids=[],
                             severity=severity,
                             status=status,
+                            source="signature-base",
                             source_url="https://github.com/Neo23x0/signature-base",
                         )
                     )
@@ -1835,7 +2073,7 @@ if __name__ == "__main__":
         help=(
             "Sources to load (default: all). "
             "Options: misp-galaxy attck attck-mobile attck-ics atlas kev sigma owasp apt-sheet "
-            "abuse-ch ipsum phishtank malpedia sigma-full yara-rules icewater signature-base "
+            "sigma-full signature-base abuse-ch ipsum phishtank malpedia yara-rules icewater "
             "otx claude-ttp sophistication dedup"
         ),
     )
