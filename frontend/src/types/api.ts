@@ -88,6 +88,15 @@ export interface DiamondModel {
   }
 }
 
+export interface ActorRef {
+  id: string
+  name: string
+  country_code: string | null
+  sponsor_type: string
+  sophistication: number | null
+  ttp_count: number
+}
+
 // ── TTPs ─────────────────────────────────────────────────────────────────────
 
 export interface AttckTechnique {

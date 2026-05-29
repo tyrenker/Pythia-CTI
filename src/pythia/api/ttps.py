@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from pythia.core.db import get_session
 from pythia.detections.converters import convert as sigma_convert
+from pythia.models.actor import ActorTTPMapping, ThreatActor
 from pythia.models.atlas import AtlasTechnique
 from pythia.models.attck import AttckTechnique
 from pythia.models.rule import DetectionRule
@@ -28,6 +30,15 @@ class TechniqueDetail(BaseModel):
     detection_note: str | None = None
     source_url: str | None = None
     framework: str = "attck"
+
+
+class ActorRef(BaseModel):
+    id: str
+    name: str
+    country_code: str | None = None
+    sponsor_type: str
+    sophistication: int | None = None
+    ttp_count: int = 0
 
 
 class AtlasTechniqueDetail(BaseModel):
@@ -126,6 +137,44 @@ async def get_hunt_queries(
         "technique_name": tech.name,
         "rules": hunt_queries,
     }
+
+
+@router.get("/{technique_id}/actors", response_model=list[ActorRef])
+async def get_actors_by_ttp(
+    technique_id: str,
+    session: Session = Depends(get_session),
+) -> list[ActorRef]:
+    """Return all threat actors that have this technique mapped."""
+    tech_upper = technique_id.upper()
+    actors = (
+        session.query(ThreatActor)
+        .join(ActorTTPMapping, ActorTTPMapping.actor_id == ThreatActor.id)
+        .filter(ActorTTPMapping.technique_id == tech_upper)
+        .distinct()
+        .order_by(ThreatActor.name)
+        .all()
+    )
+    if not actors:
+        return []
+    actor_ids = [a.id for a in actors]
+    count_rows = (
+        session.query(ActorTTPMapping.actor_id, func.count(ActorTTPMapping.id))
+        .filter(ActorTTPMapping.actor_id.in_(actor_ids))
+        .group_by(ActorTTPMapping.actor_id)
+        .all()
+    )
+    counts: dict[str, int] = {r[0]: r[1] for r in count_rows}
+    return [
+        ActorRef(
+            id=a.id,
+            name=a.name,
+            country_code=a.country_code,
+            sponsor_type=a.sponsor_type,
+            sophistication=a.sophistication,
+            ttp_count=counts.get(a.id, 0),
+        )
+        for a in actors
+    ]
 
 
 @router.get("", response_model=list[TechniqueDetail])

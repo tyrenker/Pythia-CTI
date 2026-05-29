@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>{{ title }}</h1>
+<div style="margin-bottom: 12px;"></div>
+
+<!-- Hypothesis -->
+{% if hypothesis %}
+<div class="summary-box">
+  <strong>Hunt Hypothesis:</strong> {{ hypothesis }}
+</div>
+{% endif %}
+
+<!-- Key Metrics -->
+<div class="section">
+  <div class="two-col">
+    <div>
+      <h2>Hunt Summary</h2>
+      <table>
+        <tr><td><strong>Status</strong></td><td>{{ status | capitalize }}</td></tr>
+        {% if analyst %}<tr><td><strong>Analyst</strong></td><td>{{ analyst }}</td></tr>{% endif %}
+        <tr><td><strong>Started</strong></td><td>{{ created_at }}</td></tr>
+        <tr><td><strong>Last Updated</strong></td><td>{{ updated_at }}</td></tr>
+        <tr><td><strong>Observations</strong></td><td>{{ obs_count }}</td></tr>
+        <tr><td><strong>Draft Detections</strong></td><td>{{ detection_count }}</td></tr>
+      </table>
+    </div>
+    <div>
+      {% if sector_focus %}
+      <h2>Sector Focus</h2>
+      <div>{% for s in sector_focus %}<span class="badge badge-info">{{ s }}</span> {% endfor %}</div>
+      {% endif %}
+      {% if motivation_focus %}
+      <h2 style="margin-top:10px">Motivation Focus</h2>
+      <div>{% for m in motivation_focus %}<span class="badge badge-tactic">{{ m }}</span> {% endfor %}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Threat Indicators Summary -->
+{% if ioc_obs %}
+<div class="section">
+  <h2>Indicators of Compromise ({{ ioc_obs | length }})</h2>
+  <table>
+    <tr><th>Type</th><th>Value</th><th>Confidence</th></tr>
+    {% for obs in ioc_obs %}
+    <tr>
+      <td><span class="badge badge-info">{{ obs.obs_type | replace('ioc_', '') | upper }}</span></td>
+      <td><code>{{ obs.value }}</code></td>
+      <td>{{ obs.confidence_source }}{{ obs.confidence_info }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- TTPs -->
+{% if ttp_obs %}
+<div class="section">
+  <h2>MITRE ATT&amp;CK Techniques ({{ ttp_obs | length }})</h2>
+  <div>
+    {% for obs in ttp_obs %}
+    <span class="badge badge-tech">{{ obs.value }}</span>
+    {% endfor %}
+  </div>
+  {% if ttp_obs | length > 0 %}
+  <p style="margin-top:8px; font-size:9pt; color:#888;">
+    Full technique details available in the Technical Report.
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Detection Coverage -->
+{% if detections %}
+<div class="section">
+  <h2>Detection Engineering ({{ detections | length }} rules)</h2>
+  <table>
+    <tr><th>Rule</th><th>Type</th><th>Status</th><th>Pyramid Tier</th></tr>
+    {% for det in detections %}
+    <tr>
+      <td><strong>{{ det.title }}</strong></td>
+      <td><span class="badge badge-tactic">{{ det.rule_type | upper }}</span></td>
+      <td>{{ det.status }}</td>
+      <td>{{ det.pyramid_tier }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Analyst Notes Summary -->
+{% if notes_excerpt %}
+<div class="section">
+  <h2>Analyst Assessment</h2>
+  <div class="summary-box" style="white-space: pre-wrap; font-size:9pt;">{{ notes_excerpt }}</div>
+</div>
+{% endif %}
+
+{% endblock %}

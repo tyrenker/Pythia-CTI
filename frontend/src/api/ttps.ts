@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
-import type { AttckTechnique, HuntQueriesResponse } from '@/types/api'
+import type { ActorRef, AttckTechnique, HuntQueriesResponse } from '@/types/api'
 
 interface ListTTPsParams {
   tactic?: string
@@ -39,6 +39,14 @@ export function useHuntQueries(id: string) {
   return useQuery({
     queryKey: ['hunt-queries', id],
     queryFn: () => apiFetch<HuntQueriesResponse>(`/ttps/${id}/hunt-queries`),
+    enabled: !!id,
+  })
+}
+
+export function useActorsByTTP(id: string) {
+  return useQuery({
+    queryKey: ['ttp-actors', id],
+    queryFn: () => apiFetch<ActorRef[]>(`/ttps/${id}/actors`),
     enabled: !!id,
   })
 }

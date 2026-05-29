@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>{{ title }}</h1>
+<div style="margin-bottom: 12px;"></div>
+
+{% if hypothesis %}
+<div class="summary-box">
+  <strong>Hypothesis:</strong> {{ hypothesis }}
+</div>
+{% endif %}
+
+<!-- Session Metadata -->
+<div class="section">
+  <h2>Session Metadata</h2>
+  <table>
+    <tr><td><strong>Hunt ID</strong></td><td><code>{{ hunt_id }}</code></td></tr>
+    <tr><td><strong>Status</strong></td><td>{{ status | capitalize }}</td></tr>
+    {% if analyst %}<tr><td><strong>Analyst</strong></td><td>{{ analyst }}</td></tr>{% endif %}
+    <tr><td><strong>Created</strong></td><td>{{ created_at }}</td></tr>
+    <tr><td><strong>Updated</strong></td><td>{{ updated_at }}</td></tr>
+    {% if sector_focus %}<tr><td><strong>Sector Focus</strong></td><td>{{ sector_focus | join(', ') }}</td></tr>{% endif %}
+    {% if motivation_focus %}<tr><td><strong>Motivation Focus</strong></td><td>{{ motivation_focus | join(', ') }}</td></tr>{% endif %}
+  </table>
+</div>
+
+<!-- All Observations -->
+{% if observations %}
+<div class="section">
+  <h2>Observations ({{ observations | length }})</h2>
+  <table>
+    <tr><th>Type</th><th>Value</th><th>Confidence</th><th>Pyramid Tier</th><th>Notes</th></tr>
+    {% for obs in observations %}
+    <tr>
+      <td><span class="badge badge-info">{{ obs.obs_type }}</span></td>
+      <td><code style="font-size:7.5pt; word-break:break-all;">{{ obs.value }}</code></td>
+      <td>{{ obs.confidence_source }}{{ obs.confidence_info }}</td>
+      <td>{{ obs.pyramid_tier or '—' }}</td>
+      <td style="font-size:8pt; color:#555;">{{ obs.notes or '' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Analyst Notes -->
+{% if notes %}
+<div class="section">
+  <h2>Analyst Notes</h2>
+  <div style="white-space: pre-wrap; font-size:9pt; line-height:1.6; font-family:'Helvetica Neue',Arial,sans-serif;">{{ notes }}</div>
+</div>
+{% endif %}
+
+<!-- Draft Detections -->
+{% if detections %}
+<div class="section">
+  <h2>Draft Detections ({{ detections | length }})</h2>
+  {% for det in detections %}
+  <div style="margin-bottom:16px; border:1px solid #e0e0e0; border-radius:4px; padding:10px;">
+    <h3 style="margin-bottom:6px;">{{ det.title }}</h3>
+    <div style="margin-bottom:8px;">
+      <span class="badge badge-tactic">{{ det.rule_type | upper }}</span>
+      <span class="badge {% if det.status == 'promoted' %}badge-low{% elif det.status == 'reviewed' %}badge-medium{% else %}badge-info{% endif %}">{{ det.status }}</span>
+      <span class="badge badge-critical">{{ det.pyramid_tier }}</span>
+      {% for ttp in det.linked_ttp_ids %}<span class="badge badge-tech">{{ ttp }}</span>{% endfor %}
+    </div>
+    {% if det.rationale %}
+    <p style="font-size:8.5pt; color:#555; margin-bottom:6px; font-style:italic;">{{ det.rationale }}</p>
+    {% endif %}
+    <pre>{{ det.content }}</pre>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { useTTP, useHuntQueries } from '@/api/ttps'
+import { Link, useParams } from 'react-router-dom'
+import { useTTP, useHuntQueries, useActorsByTTP } from '@/api/ttps'
 import { SeverityBadge } from '@/components/shared/SeverityBadge'
 import { CodeBlock } from '@/components/shared/CodeBlock'
 import { Breadcrumb } from '@/components/layout/Breadcrumb'
+import { cn } from '@/lib/utils'
+import { SPONSOR_COLORS } from '@/lib/constants'
 
 type Tab = 'description' | 'hunt' | 'actors'
 type QueryTab = 'splunk' | 'elastic' | 'sentinel' | 'sigma'
@@ -13,6 +15,7 @@ export function TtpDetail() {
   const [tab, setTab] = useState<Tab>('description')
   const { data: ttp, isLoading } = useTTP(id ?? '')
   const { data: hunts } = useHuntQueries(id ?? '')
+  const { data: actors } = useActorsByTTP(id ?? '')
 
   if (isLoading) return <div className="py-16 text-center text-sm text-text-muted">Loading…</div>
   if (!ttp) return <div className="py-16 text-center text-sm text-red-400">Technique not found.</div>
@@ -20,7 +23,7 @@ export function TtpDetail() {
   const TABS = [
     { key: 'description' as Tab, label: 'Description' },
     { key: 'hunt' as Tab, label: `Hunt Queries (${hunts?.rules.length ?? 0})` },
-    { key: 'actors' as Tab, label: 'Actors Using This' },
+    { key: 'actors' as Tab, label: `Actors Using This (${actors?.length ?? 0})` },
   ]
 
   return (
@@ -112,9 +115,53 @@ export function TtpDetail() {
         )}
 
         {tab === 'actors' && (
-          <p className="text-xs text-text-muted">
-            Actor data will appear here when actor-TTP mappings are loaded.
-          </p>
+          <div>
+            {!actors || actors.length === 0 ? (
+              <div className="py-8 text-center text-xs text-text-muted">
+                No actor groups have this technique mapped.
+              </div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-[#2a2a3e]">
+                    {['Actor', 'Origin', 'Sponsor', 'Sophistication', 'Total TTPs'].map(h => (
+                      <th key={h} className="px-3 py-2 text-left text-text-muted font-medium">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {actors.map(actor => (
+                    <tr key={actor.id} className="border-b border-[#2a2a3e] hover:bg-bg-elevated transition-colors">
+                      <td className="px-3 py-2">
+                        <Link
+                          to={`/actors/${actor.id}`}
+                          className="font-medium text-accent-bright hover:underline"
+                        >
+                          {actor.name}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 text-text-muted">{actor.country_code ?? '—'}</td>
+                      <td className="px-3 py-2">
+                        <span className={cn('rounded px-2 py-0.5 text-xs font-medium', SPONSOR_COLORS[actor.sponsor_type] ?? 'bg-zinc-800 text-zinc-300')}>
+                          {actor.sponsor_type}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        {actor.sophistication != null ? (
+                          <span className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map(n => (
+                              <span key={n} className={n <= actor.sophistication! ? 'text-accent-bright' : 'text-[#2a2a3e]'}>●</span>
+                            ))}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-text-muted">{actor.ttp_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
       </div>
     </div>

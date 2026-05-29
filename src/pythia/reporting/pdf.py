@@ -21,6 +21,50 @@ def _render_html(template_name: str, context: dict[str, Any]) -> str:
     return tmpl.render(**context)
 
 
+def render_hunt_report(hunt: Any, template: str = "executive") -> bytes:
+    """Render a HuntSession ORM object to PDF bytes."""
+    from weasyprint import HTML
+
+    notes_content = hunt.note.content if hunt.note else ""
+
+    ioc_obs = [o for o in hunt.observations if o.obs_type.startswith("ioc_")]
+    ttp_obs = [o for o in hunt.observations if o.obs_type == "ttp"]
+
+    def _fmt(dt: Any) -> str:
+        if dt is None:
+            return "—"
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+
+    context: dict[str, Any] = {
+        "report_id": hunt.id,
+        "hunt_id": hunt.id,
+        "title": hunt.name,
+        "tlp": "AMBER",
+        "tlp_label": "TLP:AMBER",
+        "report_type": "Hunt Executive Summary" if template == "executive" else "Hunt Technical Report",
+        "generated_date": date.today().isoformat(),
+        "pub_date": None,
+        "hypothesis": hunt.hypothesis,
+        "status": hunt.status,
+        "analyst": hunt.analyst,
+        "sector_focus": hunt.sector_focus or [],
+        "motivation_focus": hunt.motivation_focus or [],
+        "created_at": _fmt(hunt.created_at),
+        "updated_at": _fmt(hunt.updated_at),
+        "observations": hunt.observations,
+        "ioc_obs": ioc_obs,
+        "ttp_obs": ttp_obs,
+        "obs_count": len(hunt.observations),
+        "detections": hunt.detections,
+        "detection_count": len(hunt.detections),
+        "notes": notes_content,
+        "notes_excerpt": notes_content[:1500] if notes_content else "",
+    }
+
+    html_content = _render_html(f"hunt_{template}", context)
+    return HTML(string=html_content, base_url=str(_TEMPLATES_DIR)).write_pdf()  # type: ignore[return-value]
+
+
 def render_report(report: Any, template: Template = "executive") -> bytes:
     """Render a SourceReport to PDF bytes.
 

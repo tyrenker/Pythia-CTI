@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch, apiPost, apiDelete } from './client'
+
+const API_BASE = '/v1'
+function getApiKey(): string {
+  return localStorage.getItem('pythia_api_key') ?? ''
+}
 import type {
   HuntSessionSummary,
   HuntSessionDetail,
@@ -64,11 +69,11 @@ export function useUpdateHunt(id: string) {
   })
 }
 
-export function useArchiveHunt(id: string) {
+export function useDeleteHunt() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => apiDelete(`/hunts/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['hunts'] }),
+    mutationFn: (id: string) => apiDelete(`/hunts/${id}`),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['hunts'] }),
   })
 }
 
@@ -164,13 +169,67 @@ export function usePromoteDetection(sessionId: string) {
 // ── Claude endpoints ──────────────────────────────────────────────────────────
 
 export function useSuggestActors(sessionId: string) {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiPost<ActorSuggestionsResponse>(`/hunts/${sessionId}/suggest-actors`, {}),
+    onSuccess: (data) => qc.setQueryData(['hunt-actor-suggestions', sessionId], data),
+  })
+}
+
+export function useCachedActorSuggestions(sessionId: string) {
+  return useQuery<ActorSuggestionsResponse | null>({
+    queryKey: ['hunt-actor-suggestions', sessionId],
+    queryFn: () => null,
+    enabled: false,
+    staleTime: Infinity,
   })
 }
 
 export function useRefineHypothesis(sessionId: string) {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiPost<HypothesisRefinement>(`/hunts/${sessionId}/refine-hypothesis`, {}),
+    onSuccess: (data) => qc.setQueryData(['hunt-hypothesis-refinement', sessionId], data),
   })
+}
+
+export function useCachedHypothesisRefinement(sessionId: string) {
+  return useQuery<HypothesisRefinement | null>({
+    queryKey: ['hunt-hypothesis-refinement', sessionId],
+    queryFn: () => null,
+    enabled: false,
+    staleTime: Infinity,
+  })
+}
+
+// ── Exports ───────────────────────────────────────────────────────────────────
+
+export async function exportHunt(
+  sessionId: string,
+  format: 'markdown' | 'stix' | 'pdf',
+  template?: 'executive' | 'technical',
+): Promise<void> {
+  const key = getApiKey()
+  const headers: HeadersInit = key ? { 'X-API-Key': key } : {}
+
+  let path = `${API_BASE}/hunts/${sessionId}/export/${format}`
+  if (format === 'pdf' && template) path += `?template=${template}`
+
+  const res = await fetch(path, { headers })
+  if (!res.ok) throw new Error(`Export failed: ${res.statusText}`)
+
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+
+  const cd = res.headers.get('Content-Disposition') ?? ''
+  const match = cd.match(/filename="([^"]+)"/)
+  const ext = format === 'markdown' ? 'md' : format === 'stix' ? 'json' : 'pdf'
+  a.download = match ? match[1] : `hunt-${sessionId.slice(0, 8)}.${ext}`
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(objectUrl)
 }

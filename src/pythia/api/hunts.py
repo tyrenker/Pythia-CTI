@@ -9,6 +9,7 @@ from pathlib import Path
 import anthropic
 from anthropic.types import TextBlock
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -392,14 +393,13 @@ async def update_hunt(
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def archive_hunt(
+async def delete_hunt(
     session_id: str,
     db: Session = Depends(get_session),
     _: None = Depends(require_api_key),
 ) -> None:
     hunt = _get_session_or_404(session_id, db)
-    hunt.status = "archived"
-    hunt.updated_at = datetime.utcnow()
+    db.delete(hunt)
     db.commit()
 
 
@@ -686,6 +686,60 @@ async def update_detection(
     db.commit()
     db.refresh(detection)
     return _detection_to_out(detection)
+
+
+# ---------------------------------------------------------------------------
+# Export endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{session_id}/export/markdown")
+async def export_markdown(
+    session_id: str,
+    db: Session = Depends(get_session),
+) -> Response:
+    hunt = _get_session_or_404(session_id, db)
+    from pythia.exporters.hunt import export_hunt_markdown
+    content = export_hunt_markdown(hunt)
+    filename = f"hunt-{session_id[:8]}.md"
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{session_id}/export/stix")
+async def export_stix(
+    session_id: str,
+    db: Session = Depends(get_session),
+) -> Response:
+    hunt = _get_session_or_404(session_id, db)
+    from pythia.exporters.hunt import export_hunt_stix
+    bundle = export_hunt_stix(hunt)
+    filename = f"hunt-{session_id[:8]}-stix.json"
+    return Response(
+        content=json.dumps(bundle, indent=2).encode("utf-8"),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{session_id}/export/pdf")
+async def export_pdf(
+    session_id: str,
+    template: str = Query(default="executive", pattern="^(executive|technical)$"),
+    db: Session = Depends(get_session),
+) -> Response:
+    hunt = _get_session_or_404(session_id, db)
+    from pythia.reporting.pdf import render_hunt_report
+    pdf_bytes = render_hunt_report(hunt, template)
+    filename = f"hunt-{session_id[:8]}-{template}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/{session_id}/detections/{detection_id}/promote", status_code=status.HTTP_201_CREATED)
