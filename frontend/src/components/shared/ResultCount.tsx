@@ -26,28 +26,28 @@ export function ResultCount({
   if (pageItemCount === 0) {
     label = `No ${noun}`
   } else if (total != null) {
-    label = `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()} ${noun} · Page ${page + 1}`
+    label = `${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()} ${noun} · page ${page + 1}`
   } else {
-    label = `Page ${page + 1}`
+    label = `page ${page + 1}`
   }
 
   return (
-    <div className="mt-4 flex items-center justify-between text-xs text-text-muted">
+    <div className="mt-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b7280]">
       <span>{label}</span>
       <div className="flex items-center gap-3">
         <button
           onClick={onPrev}
           disabled={page === 0}
-          className="flex items-center gap-1 transition-colors hover:text-text-primary disabled:opacity-40"
+          className="flex items-center gap-1 transition-colors hover:text-[#00ff88] disabled:opacity-30"
         >
-          <ChevronLeft size={14} /> Prev
+          <ChevronLeft size={12} strokeWidth={1.5} /> PREV
         </button>
         <button
           onClick={onNext}
           disabled={pageItemCount < pageSize}
-          className="flex items-center gap-1 transition-colors hover:text-text-primary disabled:opacity-40"
+          className="flex items-center gap-1 transition-colors hover:text-[#00ff88] disabled:opacity-30"
         >
-          Next <ChevronRight size={14} />
+          NEXT <ChevronRight size={12} strokeWidth={1.5} />
         </button>
       </div>
     </div>

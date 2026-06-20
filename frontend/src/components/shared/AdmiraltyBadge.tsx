@@ -5,7 +5,7 @@ interface Props {
 }
 
 export function AdmiraltyBadge({ code }: Props) {
-  if (!code) return <span className="text-text-muted">—</span>
+  if (!code) return <span className="font-mono text-[#6b7280]">—</span>
 
   const source = code[0]?.toUpperCase() ?? ''
   const accuracy = code[1] ?? ''
@@ -17,7 +17,7 @@ export function AdmiraltyBadge({ code }: Props) {
   return (
     <span
       title={tooltip}
-      className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium font-mono bg-zinc-800 text-zinc-300 cursor-help"
+      className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wider rounded-none border border-[#6b7280] text-[#9ca3af] bg-[#6b7280]/10 cursor-help"
     >
       {code.toUpperCase()}
     </span>

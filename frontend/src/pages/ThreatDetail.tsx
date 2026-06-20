@@ -41,7 +41,7 @@ export function ThreatDetail() {
             <h1 className="text-lg font-semibold text-text-primary">{data.title ?? 'Untitled Report'}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
               {data.url && (
-                <a href={data.url} target="_blank" rel="noreferrer" className="text-accent-bright hover:underline">
+                <a href={data.url} target="_blank" rel="noreferrer" className="text-[#00ff88] hover:underline">
                   Source ↗
                 </a>
               )}
@@ -61,7 +61,7 @@ export function ThreatDetail() {
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-xs font-medium transition-colors ${
               tab === t.key
-                ? 'border-b-2 border-accent-bright text-text-primary -mb-px'
+                ? 'border-b-2 border-[#00ff88] text-text-primary -mb-px'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
@@ -142,7 +142,7 @@ export function ThreatDetail() {
                   <Link
                     key={name}
                     to={`/actors/${encodeURIComponent(name)}`}
-                    className="rounded bg-bg-elevated px-2 py-1 text-xs text-accent-bright hover:opacity-80"
+                    className="rounded bg-bg-elevated px-2 py-1 text-xs text-[#00ff88] hover:opacity-80"
                   >
                     {name}
                   </Link>

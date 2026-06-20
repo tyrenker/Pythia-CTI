@@ -8,6 +8,7 @@ import { TechniqueTag } from '@/components/shared/TechniqueTag'
 import { DataTable } from '@/components/shared/DataTable'
 import { FilterBar } from '@/components/shared/FilterBar'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { StatStrip } from '@/components/shared/StatStrip'
 import { RULE_SOURCE_LABELS, SEVERITY_COLORS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -317,7 +318,7 @@ export function Rules() {
         <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => navigate(`/rules/${r.rule_type}/${r.id}`)}
-            className="rounded p-1 text-text-muted transition-colors hover:text-accent-bright"
+            className="rounded p-1 text-text-muted transition-colors hover:text-[#00ff88]"
             title="View rule"
           >
             <Edit2 size={13} />
@@ -420,16 +421,15 @@ export function Rules() {
         activeCount={activeFilterCount}
         onClearFilters={clearFilters}
       >
-        <input
+        <SearchInput
           value={techniqueId}
-          onChange={e => { setTechniqueId(e.target.value); resetPage() }}
+          onChange={v => { setTechniqueId(v); resetPage() }}
           placeholder="Technique ID..."
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
         />
         <select
           value={ruleType}
           onChange={e => { setRuleType(e.target.value); resetPage() }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All types</option>
           <option value="sigma">Sigma</option>
@@ -438,7 +438,7 @@ export function Rules() {
         <select
           value={severity}
           onChange={e => { setSeverity(e.target.value); resetPage() }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All severities</option>
           {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -446,7 +446,7 @@ export function Rules() {
         <select
           value={ruleSource}
           onChange={e => { setRuleSource(e.target.value); resetPage() }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All sources</option>
           {RULE_SOURCES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
@@ -528,7 +528,7 @@ export function Rules() {
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
                   placeholder="Suspicious PowerShell Encoded Command"
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               </div>
 
@@ -538,7 +538,7 @@ export function Rules() {
                   <select
                     value={formSeverity}
                     onChange={e => setFormSeverity(e.target.value)}
-                    className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary focus:outline-none"
+                    className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
                   >
                     <option value="">— select —</option>
                     {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -549,7 +549,7 @@ export function Rules() {
                   <select
                     value={formStatus}
                     onChange={e => setFormStatus(e.target.value)}
-                    className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary focus:outline-none"
+                    className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
                   >
                     <option value="">— select —</option>
                     {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -566,7 +566,7 @@ export function Rules() {
                   value={formTechniqueIds}
                   onChange={e => setFormTechniqueIds(e.target.value)}
                   placeholder="T1059.001, T1027"
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               </div>
 
@@ -576,7 +576,7 @@ export function Rules() {
                   value={formSourceUrl}
                   onChange={e => setFormSourceUrl(e.target.value)}
                   placeholder="https://github.com/..."
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               </div>
 
@@ -591,7 +591,7 @@ export function Rules() {
                   placeholder={formType === 'sigma' ? SIGMA_PLACEHOLDER : YARA_PLACEHOLDER}
                   rows={18}
                   spellCheck={false}
-                  className="w-full resize-y rounded-lg border border-[#2a2a3e] bg-[#0d0d14] px-3 py-2 font-mono text-xs leading-relaxed text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full resize-y border border-[#2a2a3a] bg-[#0a0a0f] px-3 py-2 font-mono text-xs leading-relaxed text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               </div>
 

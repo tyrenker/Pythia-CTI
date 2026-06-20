@@ -51,9 +51,9 @@ export function DataTable<T>({
 
   if (loading) {
     return (
-      <div className="space-y-2 p-4">
+      <div className="space-y-px p-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-10 animate-pulse rounded bg-bg-elevated" />
+          <div key={i} className="h-10 animate-pulse bg-[#12121a] border border-[#2a2a3a]" />
         ))}
       </div>
     )
@@ -67,13 +67,14 @@ export function DataTable<T>({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#2a2a3e]">
+          <tr className="border-b-2 border-[#2a2a3a]">
             {columns.map(col => (
               <th
                 key={col.key}
                 className={cn(
-                  'h-10 px-3 text-left text-xs font-medium text-text-muted',
-                  col.sortable && 'cursor-pointer select-none hover:text-text-primary',
+                  'h-9 px-3 text-left text-[10px] font-mono uppercase tracking-[0.15em] text-[#6b7280] select-none',
+                  col.sortable && 'cursor-pointer hover:text-[#00ff88] transition-colors',
+                  sortKey === col.key && 'text-[#00ff88]',
                   col.className,
                 )}
                 onClick={() => col.sortable && toggleSort(col.key)}
@@ -81,7 +82,9 @@ export function DataTable<T>({
                 <span className="inline-flex items-center gap-1">
                   {col.header}
                   {col.sortable && sortKey === col.key && (
-                    sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                    sortDir === 'asc'
+                      ? <ChevronUp size={11} className="text-[#00ff88]" />
+                      : <ChevronDown size={11} className="text-[#00ff88]" />
                   )}
                 </span>
               </th>
@@ -93,13 +96,13 @@ export function DataTable<T>({
             <tr
               key={keyFn(row)}
               className={cn(
-                'border-b border-[#2a2a3e] transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-bg-elevated',
+                'border-b border-[#2a2a3a]/60 transition-colors duration-100',
+                onRowClick && 'cursor-pointer hover:bg-[#00ff88]/[0.03] hover:border-[#00ff88]/20',
               )}
               onClick={() => onRowClick?.(row)}
             >
               {columns.map(col => (
-                <td key={col.key} className={cn('h-10 px-3 text-xs', col.className)}>
+                <td key={col.key} className={cn('h-10 px-3 text-xs font-mono', col.className)}>
                   {col.render(row)}
                 </td>
               ))}

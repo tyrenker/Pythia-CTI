@@ -55,7 +55,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Suspected APT lateral movement via WMI"
               required
-              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
             />
           </div>
           <div>
@@ -65,7 +65,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               onChange={e => setHypothesis(e.target.value)}
               placeholder="An actor with espionage motivations is using WMI to move laterally within the finance sector..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full resize-none rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -75,7 +75,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
                 value={analyst}
                 onChange={e => setAnalyst(e.target.value)}
                 placeholder="Your name"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
             </div>
             <div>
@@ -84,7 +84,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
                 value={sectors}
                 onChange={e => setSectors(e.target.value)}
                 placeholder="finance, healthcare"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
             </div>
           </div>
@@ -94,7 +94,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               value={motivations}
               onChange={e => setMotivations(e.target.value)}
               placeholder="espionage, financial"
-              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -146,7 +146,7 @@ export function HuntList() {
       <div className="mb-6 grid grid-cols-3 gap-3">
         {[
           { label: 'Active Hunts', value: activeCt, icon: Activity, color: 'text-green-400' },
-          { label: 'Total Sessions', value: hunts?.length ?? '—', icon: Target, color: 'text-accent-bright' },
+          { label: 'Total Sessions', value: hunts?.length ?? '—', icon: Target, color: 'text-[#00ff88]' },
           { label: 'Total Observations', value: (hunts ?? []).reduce((s, h) => s + h.observation_count, 0), icon: Search, color: 'text-amber-400' },
         ].map(stat => (
           <div key={stat.label} className="rounded-xl border border-[#2a2a3e] bg-bg-surface px-4 py-3">
@@ -167,7 +167,7 @@ export function HuntList() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search hunts..."
-            className="w-full rounded-lg border border-[#2a2a3e] bg-bg-surface py-2 pl-8 pr-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+            className="w-full rounded-lg border border-[#2a2a3e] bg-bg-surface py-2 pl-8 pr-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
           />
         </div>
         <select

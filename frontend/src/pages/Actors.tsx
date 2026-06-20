@@ -7,6 +7,7 @@ import { DataTable } from '@/components/shared/DataTable'
 import { FilterBar } from '@/components/shared/FilterBar'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { ResultCount } from '@/components/shared/ResultCount'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { StatStrip } from '@/components/shared/StatStrip'
 import { cn } from '@/lib/utils'
 import { SPONSOR_COLORS } from '@/lib/constants'
@@ -136,7 +137,7 @@ export function Actors() {
             {[1, 2, 3, 4, 5].map(n => (
               <span
                 key={n}
-                className={n <= filled ? 'text-accent-bright' : 'text-[#2a2a3e]'}
+                className={n <= filled ? 'text-[#00ff88]' : 'text-[#2a2a3e]'}
               >
                 ●
               </span>
@@ -160,23 +161,21 @@ export function Actors() {
         activeCount={activeFilterCount}
         onClearFilters={clearFilters}
       >
-        <input
+        <SearchInput
           value={search}
-          onChange={e => { setSearch(e.target.value); setPage(0) }}
+          onChange={v => { setSearch(v); setPage(0) }}
           placeholder="Search by name..."
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
         />
-        <input
+        <SearchInput
           value={country}
-          onChange={e => { setCountry(e.target.value.toUpperCase()); setPage(0) }}
+          onChange={v => { setCountry(v.toUpperCase()); setPage(0) }}
           placeholder="Country (US, RU...)"
-          maxLength={2}
-          className="w-28 rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+          className="w-28"
         />
         <select
           value={sponsorType}
           onChange={e => { setSponsorType(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           {SPONSOR_TYPES.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>

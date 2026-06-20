@@ -27,7 +27,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   queued: 'bg-[#2a2a3e] text-text-muted',
-  fetching: 'bg-accent/20 text-accent-bright animate-pulse',
+  fetching: 'bg-accent/20 text-[#00ff88] animate-pulse',
   fetched: 'bg-blue-900/30 text-blue-300',
   ingesting: 'bg-yellow-900/30 text-yellow-300 animate-pulse',
   done: 'bg-green-900/30 text-green-400',
@@ -212,7 +212,7 @@ function ThreatFeedTab() {
             key={label}
             value={value}
             onChange={e => onChange(e.target.value)}
-            className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+            className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
           >
             <option value="">All {label}s</option>
             {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -222,13 +222,13 @@ function ThreatFeedTab() {
           value={sectorFilter}
           onChange={e => setSectorFilter(e.target.value)}
           placeholder="Filter sector..."
-          className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
         />
         <input
           value={actorFilter}
           onChange={e => setActorFilter(e.target.value)}
           placeholder="Filter actor..."
-          className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
         />
       </div>
 
@@ -268,7 +268,7 @@ function ThreatFeedTab() {
                   <button
                     onClick={e => handleIngest(post.id, e)}
                     disabled={ingestPost.isPending}
-                    className="rounded-md bg-accent/20 px-2 py-1 text-[11px] text-accent-bright hover:bg-accent/30 disabled:opacity-50"
+                    className="rounded-md bg-accent/20 px-2 py-1 text-[11px] text-[#00ff88] hover:bg-accent/30 disabled:opacity-50"
                   >
                     Ingest
                   </button>
@@ -337,19 +337,19 @@ function VictimTrackerTab() {
           value={sectorFilter}
           onChange={e => setSectorFilter(e.target.value)}
           placeholder="Filter sector..."
-          className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
         />
         <input
           value={countryFilter}
           onChange={e => setCountryFilter(e.target.value)}
           placeholder="Country (e.g. US)..."
-          className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
         />
         <input
           value={actorFilter}
           onChange={e => setActorFilter(e.target.value)}
           placeholder="Filter actor..."
-          className="rounded-md border border-[#2a2a3e] bg-bg-surface px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          className="border border-[#2a2a3a] bg-[#12121a] px-2 py-1.5 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
         />
         <button
           onClick={exportCsv}
@@ -476,7 +476,7 @@ function SourceHealthTab() {
               <button
                 onClick={() => doPull(source.id)}
                 disabled={pull.isPending}
-                className="ml-auto text-[11px] text-accent-bright hover:underline disabled:opacity-50"
+                className="ml-auto text-[11px] text-[#00ff88] hover:underline disabled:opacity-50"
               >
                 Pull now
               </button>
@@ -551,7 +551,7 @@ export function DarkWebMonitor() {
               className={cn(
                 'px-4 py-2 text-sm font-medium transition-colors',
                 activeTab === tab.id
-                  ? 'border-b-2 border-accent-bright text-text-primary'
+                  ? 'border-b-2 border-[#00ff88] text-text-primary'
                   : 'text-text-muted hover:text-text-primary',
               )}
             >

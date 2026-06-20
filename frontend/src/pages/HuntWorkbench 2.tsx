@@ -101,7 +101,7 @@ function ObsRow({
         type="checkbox"
         checked={selected}
         onChange={onToggle}
-        className="mt-0.5 h-3.5 w-3.5 accent-accent-bright"
+        className="mt-0.5 h-3.5 w-3.5 accent-[#00ff88]"
         title="Select for detection drafting"
       />
       <div className="min-w-0 flex-1">
@@ -160,7 +160,7 @@ function ActorCard({ suggestion, index }: { suggestion: ActorSuggestionsResponse
           </div>
           <div className="mt-0.5 flex gap-1 flex-wrap">
             {suggestion.match_types.map(mt => (
-              <span key={mt} className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-accent-bright">
+              <span key={mt} className="rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-medium text-[#00ff88]">
                 {mt}
               </span>
             ))}
@@ -186,7 +186,7 @@ function ActorCard({ suggestion, index }: { suggestion: ActorSuggestionsResponse
           {suggestion.actor_id && (
             <Link
               to={`/actors/${suggestion.actor_id}`}
-              className="inline-flex items-center gap-1 text-[10px] text-accent-bright hover:underline"
+              className="inline-flex items-center gap-1 text-[10px] text-[#00ff88] hover:underline"
             >
               View actor profile <ExternalLink size={9} />
             </Link>
@@ -266,7 +266,7 @@ function DetectionCard({
               <button
                 onClick={() => promoteDetection.mutate(detection.id)}
                 disabled={promoteDetection.isPending}
-                className="flex items-center gap-1 rounded-md bg-accent/20 px-2 py-1 text-[10px] font-medium text-accent-bright hover:bg-accent/30 disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md bg-accent/20 px-2 py-1 text-[10px] font-medium text-[#00ff88] hover:bg-accent/30 disabled:opacity-50"
               >
                 <Zap size={10} />
                 {promoteDetection.isPending ? 'Promoting...' : 'Promote to Rules'}
@@ -308,7 +308,7 @@ function RefinementPanel({ data }: { data: HypothesisRefinement }) {
       )}
       {data.recommended_pivots.length > 0 && (
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-accent-bright">Recommended pivots</p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[#00ff88]">Recommended pivots</p>
           <div className="space-y-2">
             {data.recommended_pivots.map((p, i) => (
               <div key={i} className="rounded-md border border-[#2a2a3e] p-2">
@@ -531,7 +531,7 @@ export function HuntWorkbench() {
                 value={obsValue}
                 onChange={e => setObsValue(e.target.value)}
                 placeholder="Value..."
-                className="w-full rounded-md border border-[#2a2a3e] bg-bg-elevated px-2 py-1.5 font-mono text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-md border border-[#2a2a3e] bg-bg-elevated px-2 py-1.5 font-mono text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
               <input
                 value={obsNote}
@@ -570,7 +570,7 @@ export function HuntWorkbench() {
           {/* Draft detection from selection */}
           {hasSelectedObs && (
             <div className="rounded-xl border border-accent/30 bg-accent/5 p-3 space-y-2">
-              <p className="text-xs font-medium text-accent-bright">
+              <p className="text-xs font-medium text-[#00ff88]">
                 {selectedObs.size} selected — draft a detection
               </p>
               <div className="flex gap-2">
@@ -641,11 +641,11 @@ export function HuntWorkbench() {
                 <div className="prose prose-invert prose-xs max-w-none
                   prose-headings:text-text-primary prose-headings:font-semibold
                   prose-p:text-text-muted prose-p:leading-relaxed
-                  prose-code:rounded prose-code:bg-bg-elevated prose-code:px-1 prose-code:text-xs prose-code:text-accent-bright
+                  prose-code:rounded prose-code:bg-bg-elevated prose-code:px-1 prose-code:text-xs prose-code:text-[#00ff88]
                   prose-pre:bg-bg-base prose-pre:rounded-lg prose-pre:p-3
                   prose-li:text-text-muted prose-li:marker:text-text-muted
                   prose-strong:text-text-primary prose-em:text-text-muted
-                  prose-a:text-accent-bright prose-a:no-underline hover:prose-a:underline"
+                  prose-a:text-[#00ff88] prose-a:no-underline hover:prose-a:underline"
                 >
                   <ReactMarkdown>{noteContent}</ReactMarkdown>
                 </div>
@@ -678,7 +678,7 @@ export function HuntWorkbench() {
                 <tab.icon size={11} />
                 {tab.label}
                 {tab.key === 'detections' && detections.length > 0 && (
-                  <span className="rounded-full bg-accent/30 px-1.5 text-[9px] text-accent-bright">{detections.length}</span>
+                  <span className="rounded-full bg-accent/30 px-1.5 text-[9px] text-[#00ff88]">{detections.length}</span>
                 )}
               </button>
             ))}
@@ -720,7 +720,7 @@ export function HuntWorkbench() {
                 <button
                   onClick={handleSuggestActors}
                   disabled={suggestActors.isPending || allObs.length === 0}
-                  className="flex items-center gap-1 rounded-md bg-accent/20 px-2 py-1 text-[10px] font-medium text-accent-bright hover:bg-accent/30 disabled:opacity-50"
+                  className="flex items-center gap-1 rounded-md bg-accent/20 px-2 py-1 text-[10px] font-medium text-[#00ff88] hover:bg-accent/30 disabled:opacity-50"
                 >
                   {suggestActors.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                   Refresh
@@ -729,7 +729,7 @@ export function HuntWorkbench() {
               <div className="max-h-[560px] overflow-y-auto p-2 space-y-2">
                 {suggestActors.isPending ? (
                   <div className="flex flex-col items-center gap-2 py-12">
-                    <Loader2 size={18} className="animate-spin text-accent-bright" />
+                    <Loader2 size={18} className="animate-spin text-[#00ff88]" />
                     <p className="text-xs text-text-muted">Claude is analyzing your observations...</p>
                   </div>
                 ) : actorSuggestions ? (

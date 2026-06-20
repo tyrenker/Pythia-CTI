@@ -67,7 +67,7 @@ export function Analytics() {
     {
       label: 'Top Targeted Sector',
       value: topSector,
-      color: 'text-cyan-400',
+      color: 'text-[#00ff88]/80',
       icon: TrendingUp,
     },
     {
@@ -165,7 +165,7 @@ export function Analytics() {
                 </ResponsiveContainer>
                 <div className="mt-2 space-y-1">
                   {uncoveredData.slice(0, 5).map(t => (
-                    <Link key={t.id} to={`/ttps/${t.id}`} className="block text-xs text-accent-bright hover:underline">
+                    <Link key={t.id} to={`/ttps/${t.id}`} className="block text-xs text-[#00ff88] hover:underline">
                       {t.id} — {t.name}
                     </Link>
                   ))}
@@ -196,7 +196,7 @@ export function Analytics() {
                 </ResponsiveContainer>
                 <div className="mt-2 space-y-1">
                   {coveredData.slice(0, 5).map(t => (
-                    <Link key={t.id} to={`/ttps/${t.id}`} className="block text-xs text-text-muted hover:text-accent-bright hover:underline transition-colors">
+                    <Link key={t.id} to={`/ttps/${t.id}`} className="block text-xs text-text-muted hover:text-[#00ff88] hover:underline transition-colors">
                       {t.id} — {t.name}
                     </Link>
                   ))}

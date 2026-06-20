@@ -8,6 +8,7 @@ import { DataTable } from '@/components/shared/DataTable'
 import { FilterBar } from '@/components/shared/FilterBar'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { ResultCount } from '@/components/shared/ResultCount'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { StatStrip } from '@/components/shared/StatStrip'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn, truncate } from '@/lib/utils'
@@ -82,7 +83,7 @@ export function Iocs() {
     { label: 'Total IoCs', value: totalIocs ?? '—', icon: Shield },
     { label: 'IP Addresses', value: ipCount || '—', color: 'text-orange-400', icon: Globe },
     { label: 'SHA256 Hashes', value: sha256Count || '—', color: 'text-red-400', icon: Hash },
-    { label: 'Types Tracked', value: IOC_TYPES.length, color: 'text-cyan-400' },
+    { label: 'Types Tracked', value: IOC_TYPES.length, color: 'text-[#00ff88]/80' },
   ]
 
   const columns = [
@@ -122,7 +123,7 @@ export function Iocs() {
               e.stopPropagation()
               navigate(`/actors/${ioc.actor_id}`)
             }}
-            className="cursor-pointer text-xs font-semibold text-accent-bright hover:underline"
+            className="cursor-pointer text-xs font-semibold text-[#00ff88] hover:underline"
           >
             {ioc.actor_name}
           </span>
@@ -229,16 +230,15 @@ export function Iocs() {
         activeCount={activeFilterCount}
         onClearFilters={clearFilters}
       >
-        <input
+        <SearchInput
           value={search}
-          onChange={e => { setSearch(e.target.value); setPage(0) }}
+          onChange={v => { setSearch(v); setPage(0) }}
           placeholder="Search value..."
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
         />
         <select
           value={iocType}
           onChange={e => { setIocType(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All types</option>
           {IOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -246,7 +246,7 @@ export function Iocs() {
         <select
           value={tier}
           onChange={e => { setTier(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All tiers</option>
           {PYRAMID_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -254,7 +254,7 @@ export function Iocs() {
         <select
           value={tlp}
           onChange={e => { setTlp(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All TLP</option>
           {['WHITE', 'GREEN', 'AMBER', 'RED'].map(t => <option key={t} value={t}>{t}</option>)}
@@ -262,7 +262,7 @@ export function Iocs() {
         <select
           value={source}
           onChange={e => { setSource(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All sources</option>
           {IOC_SOURCES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}

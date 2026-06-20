@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
 
 interface Crumb {
   label: string
@@ -12,16 +11,16 @@ interface Props {
 
 export function Breadcrumb({ crumbs }: Props) {
   return (
-    <nav className="flex items-center gap-1 text-xs text-text-muted mb-4">
+    <nav className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b7280] mb-5">
       {crumbs.map((crumb, i) => (
-        <span key={i} className="flex items-center gap-1">
-          {i > 0 && <ChevronRight size={12} />}
+        <span key={i} className="flex items-center gap-1.5">
+          {i > 0 && <span className="text-[#00ff88]/30">/</span>}
           {crumb.to ? (
-            <Link to={crumb.to} className="hover:text-text-primary transition-colors">
+            <Link to={crumb.to} className="transition-colors hover:text-[#00ff88]">
               {crumb.label}
             </Link>
           ) : (
-            <span className="text-text-primary">{crumb.label}</span>
+            <span className="text-[#e0e0e0]">{crumb.label}</span>
           )}
         </span>
       ))}

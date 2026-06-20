@@ -1,50 +1,79 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="180" viewBox="0 0 800 180">
-  <!-- Background -->
-  <rect width="800" height="180" rx="12" fill="#13131f"/>
-  <rect x="0.5" y="0.5" width="799" height="179" rx="11.5" fill="none" stroke="#2a2a3e" stroke-width="1"/>
+  <defs>
+    <filter id="glow" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-soft" x="-40%" y="-80%" width="180%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#00ff88" stroke-width="0.2"/>
+    </pattern>
+  </defs>
 
-  <!-- Subtle glow behind text -->
-  <ellipse cx="400" cy="85" rx="220" ry="50" fill="#7c3aed" opacity="0.06"/>
+  <!-- Base background -->
+  <rect width="800" height="180" fill="#0a0a0f"/>
 
-  <!-- Hexagon icon -->
-  <polygon
-    points="44,72 56,52 80,52 92,72 80,92 56,92"
-    fill="none"
-    stroke="#7c3aed"
-    stroke-width="2.5"
-    stroke-linejoin="round"
-  />
-  <polygon
-    points="44,72 56,52 80,52 92,72 80,92 56,92"
-    fill="#7c3aed"
-    opacity="0.12"
-  />
+  <!-- Circuit grid -->
+  <rect width="800" height="180" fill="url(#grid)" opacity="0.18"/>
 
-  <!-- PYTHIA wordmark -->
-  <text
-    x="400"
-    y="92"
+  <!-- Ambient center glow -->
+  <ellipse cx="400" cy="88" rx="280" ry="60" fill="#00ff88" opacity="0.025" filter="url(#glow-soft)"/>
+
+  <!-- Chamfered border (outer) -->
+  <polygon points="14,1 786,1 799,14 799,166 786,179 14,179 1,166 1,14"
+           fill="none" stroke="#00ff88" stroke-width="1" opacity="0.3"/>
+
+  <!-- Corner L-brackets -->
+  <polyline points="1,38 1,1 38,1"   fill="none" stroke="#00ff88" stroke-width="2" opacity="0.9"/>
+  <polyline points="762,1 799,1 799,38"  fill="none" stroke="#00ff88" stroke-width="2" opacity="0.9"/>
+  <polyline points="1,142 1,179 38,179"  fill="none" stroke="#00ff88" stroke-width="2" opacity="0.9"/>
+  <polyline points="762,179 799,179 799,142" fill="none" stroke="#00ff88" stroke-width="2" opacity="0.9"/>
+
+  <!-- Corner tick marks -->
+  <line x1="50" y1="1"  x2="58" y2="1"  stroke="#00ff88" stroke-width="1" opacity="0.4"/>
+  <line x1="742" y1="1" x2="750" y2="1" stroke="#00ff88" stroke-width="1" opacity="0.4"/>
+  <line x1="1" y1="50"  x2="1"  y2="58" stroke="#00ff88" stroke-width="1" opacity="0.4"/>
+  <line x1="1" y1="122" x2="1" y2="130" stroke="#00ff88" stroke-width="1" opacity="0.4"/>
+
+  <!-- Terminal prompt prefix -->
+  <text x="96" y="88"
+    font-family="'Courier New', Courier, monospace"
+    font-size="28"
+    font-weight="700"
+    fill="#00ff88"
+    opacity="0.45"
+    dominant-baseline="middle">&gt;</text>
+
+  <!-- PYTHIA wordmark + cursor -->
+  <text x="406" y="84"
     font-family="'Courier New', Courier, monospace"
     font-size="72"
     font-weight="700"
-    fill="#e8e8f0"
+    fill="#00ff88"
     text-anchor="middle"
     dominant-baseline="middle"
-    letter-spacing="12"
-  >PYTHIA</text>
+    letter-spacing="10"
+    filter="url(#glow)">PYTHIA_</text>
 
-  <!-- Accent underline -->
-  <line x1="260" y1="122" x2="540" y2="122" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <!-- Divider -->
+  <line x1="205" y1="121" x2="595" y2="121" stroke="#00ff88" stroke-width="0.6" opacity="0.22"/>
 
   <!-- Subtitle -->
-  <text
-    x="400"
-    y="150"
+  <text x="400" y="150"
     font-family="'Courier New', Courier, monospace"
-    font-size="13"
-    fill="#6b6b8a"
+    font-size="11"
+    fill="#00ff88"
     text-anchor="middle"
     dominant-baseline="middle"
-    letter-spacing="3"
-  >ORACLE-GRADE THREAT INTELLIGENCE</text>
+    letter-spacing="5"
+    opacity="0.38">// ORACLE-GRADE THREAT INTELLIGENCE</text>
 </svg>

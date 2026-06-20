@@ -86,7 +86,7 @@ export function Watchlist() {
         <div className="mb-6 rounded-xl border border-accent/30 bg-accent/5 p-6">
           <div className="flex items-start gap-4">
             <div className="rounded-lg bg-accent/20 p-3">
-              <Bell size={20} className="text-accent-bright" />
+              <Bell size={20} className="text-[#00ff88]" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-text-primary">No subscriptions yet</h3>
@@ -161,7 +161,7 @@ export function Watchlist() {
                             })
                           }
                           title="Test webhook"
-                          className="rounded p-1 text-text-muted transition-colors hover:text-accent-bright"
+                          className="rounded p-1 text-text-muted transition-colors hover:text-[#00ff88]"
                         >
                           <Zap size={14} />
                         </button>
@@ -196,7 +196,7 @@ export function Watchlist() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Lazarus Watch"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
               />
             </div>
 
@@ -223,7 +223,7 @@ export function Watchlist() {
                   value={filterActor}
                   onChange={e => setFilterActor(e.target.value)}
                   placeholder="lazarus"
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               )}
               {filterTab === 'ttp' && (
@@ -231,7 +231,7 @@ export function Watchlist() {
                   value={filterTtp}
                   onChange={e => setFilterTtp(e.target.value)}
                   placeholder="T1566"
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               )}
               {filterTab === 'sector' && (
@@ -239,7 +239,7 @@ export function Watchlist() {
                   value={filterSector}
                   onChange={e => setFilterSector(e.target.value)}
                   placeholder="finance"
-                  className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                  className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
                 />
               )}
             </div>
@@ -250,7 +250,7 @@ export function Watchlist() {
                 value={webhookUrl}
                 onChange={e => setWebhookUrl(e.target.value)}
                 placeholder="https://hooks.slack.com/..."
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
               />
             </div>
 
@@ -259,7 +259,7 @@ export function Watchlist() {
               <select
                 value={webhookType}
                 onChange={e => setWebhookType(e.target.value as typeof WEBHOOK_TYPES[number])}
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary focus:outline-none"
+                className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
               >
                 {WEBHOOK_TYPES.map(t => (
                   <option key={t} value={t}>{t}</option>

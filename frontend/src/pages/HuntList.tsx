@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Activity, Archive, CheckCircle, Clock, Target, MoreVertical, Trash2 } from 'lucide-react'
+import { Plus, Activity, Archive, CheckCircle, Clock, Target, MoreVertical, Trash2, Search } from 'lucide-react'
 import { useHunts, useCreateHunt, useUpdateHunt, useDeleteHunt } from '@/api/hunts'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { cn } from '@/lib/utils'
 import type { HuntSessionSummary } from '@/types/api'
 
@@ -58,7 +59,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Suspected APT lateral movement via WMI"
               required
-              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
             />
           </div>
           <div>
@@ -68,7 +69,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               onChange={e => setHypothesis(e.target.value)}
               placeholder="An actor with espionage motivations is using WMI to move laterally within the finance sector..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full resize-none border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -78,7 +79,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
                 value={analyst}
                 onChange={e => setAnalyst(e.target.value)}
                 placeholder="Your name"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
               />
             </div>
             <div>
@@ -87,7 +88,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
                 value={sectors}
                 onChange={e => setSectors(e.target.value)}
                 placeholder="finance, healthcare"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
               />
             </div>
           </div>
@@ -97,7 +98,7 @@ function NewHuntModal({ open, onClose }: { open: boolean; onClose: () => void })
               value={motivations}
               onChange={e => setMotivations(e.target.value)}
               placeholder="espionage, financial"
-              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+              className="w-full border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#e0e0e0] placeholder-[#6b7280]/60 focus:outline-none focus:border-[#00ff88] transition-colors"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -276,7 +277,7 @@ export function HuntList() {
       <div className="mb-6 grid grid-cols-3 gap-3">
         {[
           { label: 'Active Hunts', value: activeCt, icon: Activity, color: 'text-green-400' },
-          { label: 'Total Sessions', value: hunts?.length ?? '—', icon: Target, color: 'text-accent-bright' },
+          { label: 'Total Sessions', value: hunts?.length ?? '—', icon: Target, color: 'text-[#00ff88]' },
           { label: 'Total Observations', value: (hunts ?? []).reduce((s, h) => s + h.observation_count, 0), icon: Search, color: 'text-amber-400' },
         ].map(stat => (
           <div key={stat.label} className="rounded-xl border border-[#2a2a3e] bg-bg-surface px-4 py-3">
@@ -291,19 +292,16 @@ export function HuntList() {
 
       {/* Filters + new button */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search hunts..."
-            className="w-full rounded-lg border border-[#2a2a3e] bg-bg-surface py-2 pl-8 pr-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={v => setSearch(v)}
+          placeholder="Search hunts..."
+          className="flex-1"
+        />
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-2 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-2 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All statuses</option>
           <option value="active">Active</option>
