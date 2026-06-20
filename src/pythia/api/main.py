@@ -15,6 +15,7 @@ from pythia.api import (
     actors,
     ai_threats,
     analytics,
+    dark_web,
     feed,
     hunts,
     intel_feed,
@@ -84,9 +85,12 @@ def create_app() -> FastAPI:
     app.include_router(malware.router, prefix="/v1/malware", tags=["malware"])
     app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])
     app.include_router(hunts.router, prefix="/v1/hunts", tags=["hunts"])
+    app.include_router(dark_web.router, prefix="/v1/dark-web", tags=["dark-web"])
 
     # Serve built frontend — must be last so it doesn't shadow /v1/* or /docs
-    _frontend_dist = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
+    _frontend_dist = (
+        pathlib.Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
+    )
     if _frontend_dist.is_dir():
         app.mount("/", StaticFiles(directory=_frontend_dist, html=True), name="spa")
 

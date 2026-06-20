@@ -20,6 +20,7 @@ import { Docs } from './pages/Docs'
 import { RecentArticles } from './pages/RecentArticles'
 import { HuntList } from './pages/HuntList'
 import { HuntWorkbench } from './pages/HuntWorkbench'
+import { DarkWebMonitor } from './pages/DarkWebMonitor'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/intel" element={<IntelFeed />} />
+          <Route path="/dark-web" element={<DarkWebMonitor />} />
           <Route path="/intel/:id" element={<ThreatDetail />} />
           <Route path="/actors" element={<Actors />} />
           <Route path="/actors/:id" element={<ActorDetail />} />

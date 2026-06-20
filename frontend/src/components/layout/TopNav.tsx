@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Target,
+  Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
@@ -26,6 +27,7 @@ import { ApiKeyModal } from '../settings/ApiKeyModal'
 const INTELLIGENCE_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/intel', label: 'Intel Feed', icon: Rss },
+  { to: '/dark-web', label: 'Dark Web', icon: Globe },
   { to: '/actors', label: 'Actors', icon: Users },
   { to: '/ttps', label: 'TTPs', icon: Crosshair },
   { to: '/iocs', label: 'IoCs', icon: AlertCircle },

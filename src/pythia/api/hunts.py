@@ -399,7 +399,7 @@ async def delete_hunt(
     _: None = Depends(require_api_key),
 ) -> None:
     hunt = _get_session_or_404(session_id, db)
-    db.delete(hunt)
+    hunt.status = "archived"
     db.commit()
 
 
