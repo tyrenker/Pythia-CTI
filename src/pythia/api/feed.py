@@ -42,9 +42,7 @@ def _build_atom(reports: list[Any], base_url: str) -> str:
     for r in reports:
         pd: dict[str, Any] = r.parsed_data or {}
         summary = _esc(pd.get("summary") or r.title or "No summary.")
-        actors = ", ".join(
-            a.get("name", "") for a in (pd.get("actors") or []) if a.get("name")
-        )
+        actors = ", ".join(a.get("name", "") for a in (pd.get("actors") or []) if a.get("name"))
         ttps = ", ".join(
             t.get("technique_id", "") for t in (pd.get("ttps") or []) if t.get("technique_id")
         )

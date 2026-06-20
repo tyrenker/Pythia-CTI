@@ -938,14 +938,16 @@ def seed_dark_web_sources(session: Any, dry_run: bool) -> int:
             continue
         existing = session.query(DarkWebForumSource).filter_by(onion_url=onion_url).first()
         if not existing:
-            session.add(DarkWebForumSource(
-                name=entry["name"],
-                category=entry["category"],
-                onion_url=onion_url,
-                poll_interval_h=entry.get("poll_interval_h", 4),
-                auto_ingest=entry.get("auto_ingest", False),
-                description=entry.get("description"),
-            ))
+            session.add(
+                DarkWebForumSource(
+                    name=entry["name"],
+                    category=entry["category"],
+                    onion_url=onion_url,
+                    poll_interval_h=entry.get("poll_interval_h", 4),
+                    auto_ingest=entry.get("auto_ingest", False),
+                    description=entry.get("description"),
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -975,11 +977,13 @@ def seed_intel_feeds(session: Any, dry_run: bool) -> int:
             continue
         existing = session.query(IntelFeedSource).filter_by(url=url).first()
         if not existing:
-            session.add(IntelFeedSource(
-                name=entry["name"],
-                vendor=entry["vendor"],
-                url=url,
-            ))
+            session.add(
+                IntelFeedSource(
+                    name=entry["name"],
+                    vendor=entry["vendor"],
+                    url=url,
+                )
+            )
             added += 1
 
     if not dry_run:
@@ -1000,26 +1004,24 @@ def seed_sophistication(session: Any, dry_run: bool) -> int:
     from pythia.ingestion.enrichment import compute_sophistication
 
     # Single join to fetch all actor→tactics data efficiently
-    rows = session.execute(text("""
+    rows = session.execute(
+        text("""
         SELECT m.actor_id, at.tactics
         FROM actor_ttp_mappings m
         LEFT JOIN attck_techniques at ON at.technique_id = m.technique_id
-    """)).fetchall()
+    """)
+    ).fetchall()
 
     actor_tactics: dict[str, set[str]] = {}
     for actor_id, tactics_val in rows:
         if tactics_val:
-            tactics = (
-                tactics_val
-                if isinstance(tactics_val, list)
-                else json.loads(tactics_val)
-            )
+            tactics = tactics_val if isinstance(tactics_val, list) else json.loads(tactics_val)
             actor_tactics.setdefault(actor_id, set()).update(tactics)
 
     # Pre-compute TTP counts to avoid N queries
-    count_rows = session.execute(text(
-        "SELECT actor_id, COUNT(*) FROM actor_ttp_mappings GROUP BY actor_id"
-    )).fetchall()
+    count_rows = session.execute(
+        text("SELECT actor_id, COUNT(*) FROM actor_ttp_mappings GROUP BY actor_id")
+    ).fetchall()
     ttp_counts: dict[str, int] = {r[0]: r[1] for r in count_rows}
 
     updated = 0
@@ -1050,6 +1052,7 @@ def seed_otx_actors(session: Any, dry_run: bool) -> int:
     includes MITRE ATT&CK tags, TTP mappings are added to the matching actor.
     """
     from pythia.core.config import get_settings
+
     settings = get_settings()
     api_key = settings.otx_api_key
     if not api_key:
@@ -1067,7 +1070,7 @@ def seed_otx_actors(session: Any, dry_run: bool) -> int:
     if not dry_run:
         for a in session.query(ThreatActor).all():
             actors_by_name[a.name.lower()] = a
-            for al in (a.aliases or []):
+            for al in a.aliases or []:
                 actors_by_alias[al.lower()] = a
 
     def _find_actor(name: str) -> ThreatActor | None:
@@ -1105,9 +1108,7 @@ def seed_otx_actors(session: Any, dry_run: bool) -> int:
             # Extract ATT&CK technique IDs from pulse tags
             tags: list[str] = pulse.get("tags", []) or []
             attack_ids: list[str] = pulse.get("attack_ids", []) or []
-            tech_ids = [
-                t for t in attack_ids + tags if tech_re.match(t.strip())
-            ]
+            tech_ids = [t for t in attack_ids + tags if tech_re.match(t.strip())]
             if not tech_ids:
                 continue
 
@@ -1123,12 +1124,14 @@ def seed_otx_actors(session: Any, dry_run: bool) -> int:
             for tid in tech_ids:
                 tid = tid.strip()
                 if tid not in existing:
-                    session.add(ActorTTPMapping(
-                        actor_id=actor.id,
-                        technique_id=tid,
-                        use_note=None,
-                        source="otx",
-                    ))
+                    session.add(
+                        ActorTTPMapping(
+                            actor_id=actor.id,
+                            technique_id=tid,
+                            use_note=None,
+                            source="otx",
+                        )
+                    )
                     existing.add(tid)
                     total_mappings += 1
 
@@ -1151,6 +1154,7 @@ def seed_claude_ttp_inference(session: Any, dry_run: bool) -> int:
     """
     from pythia.core.config import get_settings
     from pythia.ingestion.enrichment import infer_ttps_from_description
+
     settings = get_settings()
     if not settings.anthropic_api_key:
         print("  Claude TTP inference: no ANTHROPIC_API_KEY set — skipping")
@@ -1171,7 +1175,11 @@ def seed_claude_ttp_inference(session: Any, dry_run: bool) -> int:
         print("  Claude TTP inference: no eligible actors found — skipping")
         return 0
 
-    print(f"  Claude TTP inference: inferring TTPs for {len(candidates)} actors...", end=" ", flush=True)
+    print(
+        f"  Claude TTP inference: inferring TTPs for {len(candidates)} actors...",
+        end=" ",
+        flush=True,
+    )
     total_added = 0
     for actor in candidates:
         if dry_run:
@@ -1179,12 +1187,14 @@ def seed_claude_ttp_inference(session: Any, dry_run: bool) -> int:
             continue
         tech_ids = infer_ttps_from_description(actor, session)
         for tid in tech_ids:
-            session.add(ActorTTPMapping(
-                actor_id=actor.id,
-                technique_id=tid,
-                use_note="inferred by Claude from actor description",
-                source="claude-inference",
-            ))
+            session.add(
+                ActorTTPMapping(
+                    actor_id=actor.id,
+                    technique_id=tid,
+                    use_note="inferred by Claude from actor description",
+                    source="claude-inference",
+                )
+            )
             total_added += 1
         if tech_ids:
             session.flush()
@@ -1282,8 +1292,15 @@ def dedup_attck_actors(session: Any, dry_run: bool) -> int:
 
 def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
     targets = sources or [
-        "misp-galaxy", "attck", "atlas", "kev", "sigma", "owasp", "apt-sheet",
-        "sigma-full", "signature-base",
+        "misp-galaxy",
+        "attck",
+        "atlas",
+        "kev",
+        "sigma",
+        "owasp",
+        "apt-sheet",
+        "sigma-full",
+        "signature-base",
     ]
     print(
         f"Pythia seed pipeline {'(dry-run) ' if dry_run else ''}— targets: {', '.join(targets)}\n"
@@ -1628,7 +1645,9 @@ def seed_mitre_malware(session: Any, dry_run: bool) -> int:
             continue
 
         source_url = f"https://attack.mitre.org/software/{mitre_id}/"
-        other_refs = [r["url"] for r in ext_refs if r.get("source_name") != "mitre-attack" and r.get("url")]
+        other_refs = [
+            r["url"] for r in ext_refs if r.get("source_name") != "mitre-attack" and r.get("url")
+        ]
         family_type = _derive_family_type(description + " " + name)
 
         if dry_run:

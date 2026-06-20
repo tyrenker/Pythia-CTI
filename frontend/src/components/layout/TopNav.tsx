@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Target,
   Globe,
+  Radio,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
@@ -41,6 +43,8 @@ const DEFENSE_ITEMS = [
   { to: '/ai-threats', label: 'AI Threats', icon: Bot },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/watchlist', label: 'Watchlist', icon: Bookmark },
+  { to: '/honeypot', label: 'Honeypot', icon: Radio },
+  { to: '/operations', label: 'Operations', icon: Shield },
 ]
 
 const REFERENCE_ITEMS = [

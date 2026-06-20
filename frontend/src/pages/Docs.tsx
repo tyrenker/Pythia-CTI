@@ -1,19 +1,21 @@
 import { useState } from 'react'
-import { 
-  BookOpen, 
-  Terminal, 
-  Layers, 
-  Shield, 
-  Zap, 
-  Code, 
-  Copy, 
-  Check, 
-  Server
+import {
+  BookOpen,
+  Terminal,
+  Layers,
+  Shield,
+  Zap,
+  Code,
+  Copy,
+  Check,
+  Server,
+  Radio,
+  Activity
 } from 'lucide-react'
 
 // API Endpoints definition schema for the interactive API documentation
 interface ApiEndpoint {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   path: string
   title: string
   description: string
@@ -458,6 +460,297 @@ Content-Disposition: attachment; filename="pythia-executive-4f7cbb25.pdf"`,
     "webhook_type": "slack"
   }'`
     }
+  ],
+  Honeypot: [
+    {
+      method: 'POST',
+      path: '/v1/honeypot/events/bulk',
+      title: 'Batch Ingest Honeypot Events',
+      description: 'Accept an array of raw Cowrie (or Dionaea / Honeytrap / Mailoney) JSON events. Pythia normalizes each event, persists it, then queues background enrichment (GeoIP, ASN, AbuseIPDB, GreyNoise, VirusTotal). Used by the honeypot-forwarder container that tails the Cowrie log on your VPS.',
+      authRequired: true,
+      requestBody: `[
+  {
+    "eventid": "cowrie.login.failed",
+    "src_ip": "185.220.101.42",
+    "username": "root",
+    "password": "admin123",
+    "timestamp": "2026-06-20T14:32:11Z",
+    "sensor": "cowrie-vps-01"
+  }
+]`,
+      responseSchema: `{
+  "ingested": 1
+}`,
+      curlExample: `curl -X POST http://localhost:8000/v1/honeypot/events/bulk \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '[{"eventid":"cowrie.login.failed","src_ip":"185.220.101.42","username":"root","password":"admin123","timestamp":"2026-06-20T14:32:11Z"}]'`
+    },
+    {
+      method: 'GET',
+      path: '/v1/honeypot/events',
+      title: 'List Honeypot Events',
+      description: 'Browse raw attack events captured by the honeypot. Filter by attacker IP, honeypot type, campaign ID, or time window. Events include enrichment data (GeoIP country, ASN, AbuseIPDB score, GreyNoise classification) once the background enricher has run.',
+      authRequired: false,
+      queryParams: [
+        { name: 'ip', type: 'string', required: false, description: 'Filter by attacker IP address.' },
+        { name: 'honeypot_type', type: 'string', required: false, description: 'cowrie | dionaea | honeytrap | mailoney' },
+        { name: 'campaign', type: 'string', required: false, description: 'Filter by campaign UUID.' },
+        { name: 'since', type: 'datetime', required: false, description: 'ISO-8601 lower bound for event_timestamp.' },
+        { name: 'limit', type: 'integer', required: false, default: '50', description: 'Max results (≤ 500).' },
+        { name: 'offset', type: 'integer', required: false, default: '0', description: 'Pagination offset.' }
+      ],
+      responseSchema: `[
+  {
+    "id": "a1b2c3d4-...",
+    "honeypot_type": "cowrie",
+    "attacker_ip": "185.220.101.42",
+    "attacker_country_code": "DE",
+    "attacker_asn": "AS60781",
+    "attacker_org": "LeaseWeb Netherlands B.V.",
+    "target_port": 22,
+    "protocol": "ssh",
+    "event_timestamp": "2026-06-20T14:32:11",
+    "username_attempted": "root",
+    "password_attempted": "admin123",
+    "commands_run": [],
+    "ttp_ids": [],
+    "campaign_id": null,
+    "abuseipdb_score": 87,
+    "greynoise_classification": "malicious",
+    "vt_detections": null
+  }
+]`,
+      curlExample: `curl "http://localhost:8000/v1/honeypot/events?honeypot_type=cowrie&limit=10"`
+    },
+    {
+      method: 'GET',
+      path: '/v1/honeypot/campaigns',
+      title: 'List Attack Campaigns',
+      description: 'Returns clustered attack campaigns built by the background campaign-detection job (runs every 15 minutes when PYTHIA_ENABLE_SCHEDULER=true). Each campaign groups related attacker IPs by shared ASN, payload hashes, and credential patterns. Campaign status: active | dormant | archived.',
+      authRequired: false,
+      queryParams: [
+        { name: 'status', type: 'string', required: false, description: 'active | dormant | archived' },
+        { name: 'since', type: 'datetime', required: false, description: 'Filter by first_seen ≥ this timestamp.' },
+        { name: 'limit', type: 'integer', required: false, default: '50', description: 'Max results.' }
+      ],
+      responseSchema: `[
+  {
+    "id": "f9e8d7c6-...",
+    "name": "CAMPAIGN-2026-001",
+    "status": "active",
+    "first_seen": "2026-06-18T09:14:00",
+    "last_seen": "2026-06-20T14:32:11",
+    "attacker_ips": ["185.220.101.42", "45.143.201.10"],
+    "asns": ["AS60781"],
+    "ttp_ids": ["T1110.001"],
+    "payload_hashes": [],
+    "credential_patterns": {"root": 47, "admin": 23},
+    "target_ports": [22],
+    "event_count": 142,
+    "sigma_rule_id": null,
+    "report_id": null
+  }
+]`,
+      curlExample: `curl "http://localhost:8000/v1/honeypot/campaigns?status=active"`
+    },
+    {
+      method: 'POST',
+      path: '/v1/honeypot/campaigns/{campaign_id}/generate-report',
+      title: 'Generate Campaign CTI Report',
+      description: 'Queue a background job to compile a structured CTI report for the specified campaign. The report summarises attack timeline, credential patterns, TTPs, and IOC table, then stores it as a ThreatReport in the main database.',
+      authRequired: true,
+      responseSchema: `{
+  "status": "queued",
+  "campaign_id": "f9e8d7c6-..."
+}`,
+      curlExample: `curl -X POST http://localhost:8000/v1/honeypot/campaigns/f9e8d7c6-.../generate-report \\
+  -H "X-API-Key: YOUR_API_KEY"`
+    },
+    {
+      method: 'GET',
+      path: '/v1/honeypot/stats/daily',
+      title: 'Daily Attack Summary',
+      description: 'Returns aggregated statistics for the last 24 hours: total event count, top attacker IPs, most-targeted ports, honeypot type breakdown, most-tried credentials, and top attacker countries.',
+      authRequired: false,
+      responseSchema: `{
+  "event_count": 847,
+  "top_ips": [["185.220.101.42", 203], ["45.143.201.10", 97]],
+  "top_ports": [[22, 731], [23, 116]],
+  "by_honeypot_type": {"cowrie": 847},
+  "top_credentials": [["root:admin123", 47], ["admin:password", 23]],
+  "top_countries": [["DE", 203], ["RU", 156], ["CN", 98]]
+}`,
+      curlExample: `curl http://localhost:8000/v1/honeypot/stats/daily`
+    },
+    {
+      method: 'GET',
+      path: '/v1/honeypot/feeds/blocklist.txt',
+      title: 'IP Blocklist Feed',
+      description: 'Returns a plaintext newline-delimited list of high-confidence attacker IPs suitable for direct import into a firewall, Fail2Ban, or threat intel platform. Includes IPs with AbuseIPDB score ≥ 70 and any IP from an active campaign. No authentication required — designed for automated ingestion.',
+      authRequired: false,
+      responseSchema: `// Content-Type: text/plain
+// Cache-Control: max-age=3600
+
+45.143.201.10
+185.220.101.42
+91.92.251.103`,
+      curlExample: `# Import directly into iptables
+curl -s http://localhost:8000/v1/honeypot/feeds/blocklist.txt | \\
+  while read ip; do iptables -A INPUT -s "$ip" -j DROP; done`
+    },
+    {
+      method: 'GET',
+      path: '/v1/honeypot/taxii/honeypot-iocs',
+      title: 'STIX 2.1 Campaign IOC Bundle',
+      description: 'Returns a STIX 2.1 bundle containing Indicator objects for all active campaign IOCs. Compatible with TAXII 2.1 clients and threat intel platforms that consume STIX. The Content-Type header is set to application/taxii+json;version=2.1.',
+      authRequired: false,
+      queryParams: [
+        { name: 'status', type: 'string', required: false, default: 'active', description: 'Campaign status to export (active | dormant | archived).' }
+      ],
+      responseSchema: `{
+  "type": "bundle",
+  "id": "bundle--...",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "indicator",
+      "id": "indicator--...",
+      "name": "Honeypot Campaign CAMPAIGN-2026-001 IP: 185.220.101.42",
+      "pattern": "[ipv4-addr:value = '185.220.101.42']",
+      "pattern_type": "stix",
+      "valid_from": "2026-06-18T09:14:00Z"
+    }
+  ]
+}`,
+      curlExample: `curl http://localhost:8000/v1/honeypot/taxii/honeypot-iocs | jq '.objects | length'`
+    }
+  ],
+  SIEM: [
+    {
+      method: 'GET',
+      path: '/v1/siem/status',
+      title: 'SIEM Connection Status',
+      description: 'Tests connectivity to the configured SIEM backend and returns the SIEM type and connection state. SIEM type is controlled by PYTHIA_SIEM_TYPE in .env (wazuh | splunk | elastic). Returns configured: false if no SIEM is set up.',
+      authRequired: false,
+      responseSchema: `{
+  "configured": true,
+  "siem_type": "wazuh",
+  "connected": true
+}`,
+      curlExample: `curl http://localhost:8000/v1/siem/status`
+    },
+    {
+      method: 'POST',
+      path: '/v1/siem/rules/deploy-all',
+      title: 'Deploy All Rules to SIEM',
+      description: 'Converts all active DetectionRules (Sigma format) to the native SIEM query language and pushes them to the configured backend. Wazuh receives XML rules, Splunk receives SPL saved searches, Elastic receives EQL detection rules. Returns counts of deployed and failed rules.',
+      authRequired: true,
+      responseSchema: `{
+  "deployed": 14,
+  "failed": 0,
+  "rule_ids": ["1e8c16e4-...", "7de816f2-...", "..."]
+}`,
+      curlExample: `curl -X POST http://localhost:8000/v1/siem/rules/deploy-all \\
+  -H "X-API-Key: YOUR_API_KEY"`
+    },
+    {
+      method: 'POST',
+      path: '/v1/siem/rules/deploy/{rule_id}',
+      title: 'Deploy Single Rule to SIEM',
+      description: 'Convert and push a single Sigma detection rule to the configured SIEM. Stores the resulting SIEM-side rule ID back on the DetectionRule record so subsequent deploys are idempotent updates rather than duplicates.',
+      authRequired: true,
+      responseSchema: `{
+  "rule_id": "1e8c16e4-df0c-4334-a212-be02d17c3ae0",
+  "siem_rule_id": "wazuh-pythia-1e8c16e4",
+  "deployed_at": "2026-06-20T15:00:00"
+}`,
+      curlExample: `curl -X POST http://localhost:8000/v1/siem/rules/deploy/1e8c16e4-df0c-4334-a212-be02d17c3ae0 \\
+  -H "X-API-Key: YOUR_API_KEY"`
+    },
+    {
+      method: 'GET',
+      path: '/v1/siem/alerts',
+      title: 'List SIEM Alerts',
+      description: 'Browse alerts received from the SIEM via the webhook receiver endpoint. Each alert is correlated to a Pythia DetectionRule (if matched by title) and to a HoneypotCampaign (if the attacker IP is known). Triage status values: new | investigating | true_positive | false_positive | closed.',
+      authRequired: false,
+      queryParams: [
+        { name: 'triage_status', type: 'string', required: false, description: 'new | investigating | true_positive | false_positive | closed' },
+        { name: 'severity', type: 'string', required: false, description: 'critical | high | medium | low | info' },
+        { name: 'since', type: 'datetime', required: false, description: 'Filter by received_at ≥ this timestamp.' },
+        { name: 'limit', type: 'integer', required: false, default: '50', description: 'Max results.' }
+      ],
+      responseSchema: `[
+  {
+    "id": "c4d5e6f7-...",
+    "siem_source": "wazuh",
+    "external_alert_id": "1720483200.12345",
+    "rule_id": "1e8c16e4-...",
+    "campaign_id": "f9e8d7c6-...",
+    "severity": "high",
+    "title": "Suspicious SSH Brute Force from Known Malicious IP",
+    "attacker_ip": "185.220.101.42",
+    "mitre_techniques": ["T1110.001"],
+    "triage_status": "new",
+    "analyst_notes": null,
+    "received_at": "2026-06-20T14:35:00"
+  }
+]`,
+      curlExample: `curl "http://localhost:8000/v1/siem/alerts?triage_status=new&severity=high"`
+    },
+    {
+      method: 'POST',
+      path: '/v1/siem/alerts',
+      title: 'SIEM Alert Webhook Receiver',
+      description: 'Webhook endpoint that your SIEM calls when a detection rule fires. Wazuh, Splunk, and Elastic all support outbound webhooks. Pythia auto-correlates the incoming alert to a known DetectionRule (by title match) and to a HoneypotCampaign (by attacker IP). No authentication required — designed for SIEM integration.',
+      authRequired: false,
+      requestBody: `// Wazuh integration format (sent by the custom-pythia integration script)
+{
+  "id": "1720483200.12345",
+  "rule": {
+    "description": "Suspicious SSH Brute Force",
+    "level": "high",
+    "mitre": { "id": ["T1110.001"] }
+  },
+  "data": { "srcip": "185.220.101.42" }
+}`,
+      responseSchema: `{
+  "alert_id": "c4d5e6f7-..."
+}`,
+      curlExample: `# Simulating a Wazuh alert webhook
+curl -X POST http://localhost:8000/v1/siem/alerts \\
+  -H "Content-Type: application/json" \\
+  -d '{"id":"test-001","rule":{"description":"SSH Brute Force","level":"high","mitre":{"id":["T1110.001"]}},"data":{"srcip":"185.220.101.42"}}'`
+    },
+    {
+      method: 'PATCH',
+      path: '/v1/siem/alerts/{alert_id}/triage',
+      title: 'Triage a SIEM Alert',
+      description: 'Update the triage status of a SIEM alert. Valid transitions: new → investigating → true_positive | false_positive → closed. Analyst notes and triaged_by are optional free-text fields stored for audit trail purposes.',
+      authRequired: true,
+      requestBody: `{
+  "triage_status": "true_positive",
+  "analyst_notes": "Confirmed Mirai botnet scanner — matches CAMPAIGN-2026-001 TTPs.",
+  "triaged_by": "analyst1"
+}`,
+      responseSchema: `{
+  "id": "c4d5e6f7-...",
+  "triage_status": "true_positive",
+  "analyst_notes": "Confirmed Mirai botnet scanner — matches CAMPAIGN-2026-001 TTPs.",
+  "triaged_by": "analyst1",
+  "triaged_at": "2026-06-20T15:12:00",
+  "severity": "high",
+  "title": "Suspicious SSH Brute Force from Known Malicious IP"
+}`,
+      curlExample: `curl -X PATCH http://localhost:8000/v1/siem/alerts/c4d5e6f7-.../triage \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "triage_status": "true_positive",
+    "analyst_notes": "Confirmed Mirai botnet scanner.",
+    "triaged_by": "analyst1"
+  }'`
+    }
   ]
 }
 
@@ -521,6 +814,17 @@ export function Docs() {
             <Layers size={14} />
             Threat Operations
           </button>
+          <button
+            onClick={() => setActiveSection('honeypot-siem')}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+              activeSection === 'honeypot-siem'
+                ? 'bg-accent/10 text-[#00ff88]'
+                : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
+            }`}
+          >
+            <Radio size={14} />
+            Honeypot & SIEM Ops
+          </button>
 
           <div className="mt-4 mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
             Interactive API Specs
@@ -552,7 +856,10 @@ export function Docs() {
               <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Platform Documentation</span>
               <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">Overview & Oracle Design</h1>
               <p className="mt-2 text-sm text-text-muted leading-relaxed">
-                Named after the high priestess of Delphi who delivered Apollo's prophecies, <strong>Pythia</strong> is an oracle-grade cyber threat intelligence (CTI) platform. It ingests unorganized, public security blog posts, parses and models them using Claude AI, and serves them natively as structured STIX 2.1 profiles, Sigma rules, and executive-ready A4 PDF intelligence briefs.
+                Named after the high priestess of Delphi who delivered Apollo's prophecies, <strong>Pythia</strong> ingests raw threat intelligence, normalizes it against industry frameworks, and delivers it through a clean REST API — including executive-ready PDF briefs a CFO can actually read.
+              </p>
+              <p className="mt-2 text-sm text-text-muted leading-relaxed">
+                It ships <strong className="text-text-primary">fully loaded from the first clone</strong>: over 1,180 threat actor profiles, 759 MITRE ATT&CK techniques, 1,600+ known-exploited CVEs, and 16 curated Sigma detection rules (plus 14 Yara) — no scraping required, no account sign-ups, no SaaS subscriptions.
               </p>
             </div>
 
@@ -563,7 +870,7 @@ export function Docs() {
                   <h3 className="text-sm font-semibold font-mono">STIX 2.1 Mappings</h3>
                 </div>
                 <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                  Adversaries, techniques, indicator nodes, and active detection rules are stored and queried using normalized STIX relationship schemas.
+                  Adversaries, techniques, indicator nodes, and detection rules are stored using normalized STIX 2.1 schemas — including honeypot campaign IOC bundles exportable via TAXII.
                 </p>
               </div>
 
@@ -573,17 +880,47 @@ export function Docs() {
                   <h3 className="text-sm font-semibold font-mono">Claude AI Parser</h3>
                 </div>
                 <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                  Ingests raw URLs or copy-pasted IOC reports, performing automated extraction of malware techniques, impacts, and targeted countries.
+                  Ingests raw URLs or copy-pasted IOC reports, performing automated extraction of malware techniques, impacts, and targeted countries. Also powers threat hunt AI suggestions and honeypot campaign report generation.
                 </p>
               </div>
 
               <div className="rounded-lg border border-border bg-bg-base p-4">
                 <div className="flex items-center gap-2 text-[#00ff88]">
                   <Server size={16} />
-                  <h3 className="text-sm font-semibold font-mono">PDF Briefing engine</h3>
+                  <h3 className="text-sm font-semibold font-mono">PDF Briefing Engine</h3>
                 </div>
                 <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                  Compiles data structures into elegant executive briefs using custom A4 print-ready CSS templates powered by Jinja2 & WeasyPrint.
+                  Compiles data structures into elegant executive briefs and tactical forensics reports via Jinja2 & WeasyPrint. Honeypot campaign reports are also generated on demand.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border bg-bg-base p-4">
+                <div className="flex items-center gap-2 text-[#00ff88]">
+                  <Radio size={16} />
+                  <h3 className="text-sm font-semibold font-mono">Honeypot Collection</h3>
+                </div>
+                <p className="mt-2 text-xs text-text-muted leading-relaxed">
+                  Deploy a Cowrie SSH honeypot via Docker. Attacker events flow into Pythia in real time, enriched with GeoIP, ASN, AbuseIPDB, GreyNoise, and VirusTotal data, then clustered into named attack campaigns.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border bg-bg-base p-4">
+                <div className="flex items-center gap-2 text-[#00ff88]">
+                  <Activity size={16} />
+                  <h3 className="text-sm font-semibold font-mono">SIEM Integration</h3>
+                </div>
+                <p className="mt-2 text-xs text-text-muted leading-relaxed">
+                  Push Sigma detection rules to Wazuh, Splunk, or Elastic with one click. Receive alerts back via webhook and triage them in the Operations queue with automatic campaign correlation.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border bg-bg-base p-4">
+                <div className="flex items-center gap-2 text-[#00ff88]">
+                  <Layers size={16} />
+                  <h3 className="text-sm font-semibold font-mono">Threat Hunt Workbench</h3>
+                </div>
+                <p className="mt-2 text-xs text-text-muted leading-relaxed">
+                  AI-assisted hunt sessions with observation logging, Admiralty Code confidence scoring, Claude-powered actor attribution, and one-click promotion of drafted Sigma/YARA/KQL rules to the detection library.
                 </p>
               </div>
             </div>
@@ -591,48 +928,56 @@ export function Docs() {
             <hr className="border-border" />
 
             <div className="space-y-4">
-              <h2 className="text-lg font-bold font-mono text-text-primary">Seeded CTI Database</h2>
+              <h2 className="text-lg font-bold font-mono text-text-primary">Bundled Intelligence</h2>
               <p className="text-sm text-text-muted">
-                To guarantee zero cold-start latency, a fresh Pythia database comes pre-populated with high-fidelity, open-source intelligence feeds merged from international cybersecurity standards:
+                A fresh clone is immediately useful — no setup beyond configuration. All datasets are committed to the repo and seeded on first start (~60 seconds).
               </p>
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead className="bg-bg-elevated text-text-primary border-b border-border font-mono">
                     <tr>
-                      <th className="p-3">Feeds</th>
-                      <th className="p-3">Source Provider</th>
-                      <th className="p-3">Purpose / Usage</th>
+                      <th className="p-3">Dataset</th>
+                      <th className="p-3">Source</th>
+                      <th className="p-3">Records</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border text-text-muted">
                     <tr>
-                      <td className="p-3 font-semibold text-text-primary">MITRE ATT&CK</td>
-                      <td className="p-3">STIX 2.1 Bundle (Enterprise + ICS)</td>
-                      <td className="p-3">Fuzzy technique definitions & TTP mappings</td>
+                      <td className="p-3 font-semibold text-text-primary">Threat actor profiles</td>
+                      <td className="p-3">MISP Galaxy + ATT&CK + APT Groups Sheet (merged)</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">1,184</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-semibold text-text-primary">MISP Galaxy</td>
-                      <td className="p-3">MISP Threat Actor Clusters</td>
-                      <td className="p-3">Merged metadata profiles for 1,067 threat groups</td>
+                      <td className="p-3 font-semibold text-text-primary">ATT&CK techniques</td>
+                      <td className="p-3">MITRE ATT&CK STIX 2.1 — Enterprise + Mobile + ICS</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">759</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-semibold text-text-primary">CISA KEV</td>
-                      <td className="p-3">CISA Known Exploited Vulnerabilities</td>
-                      <td className="p-3">Correlation engine checking if threat targets critical CVEs</td>
+                      <td className="p-3 font-semibold text-text-primary">Known-exploited CVEs</td>
+                      <td className="p-3">CISA KEV catalog</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">1,602</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-semibold text-text-primary">MITRE ATLAS</td>
-                      <td className="p-3">Adversarial Threat Landscape (AI)</td>
-                      <td className="p-3">Categorizing attacks targeted at AI/ML models</td>
+                      <td className="p-3 font-semibold text-text-primary">AI/ML adversarial techniques</td>
+                      <td className="p-3">MITRE ATLAS</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">full catalog</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-semibold text-text-primary">SigmaHQ Subset</td>
-                      <td className="p-3">Curated detection signatures</td>
-                      <td className="p-3">Pre-mapped detection rules matching parsed techniques</td>
+                      <td className="p-3 font-semibold text-text-primary">Sigma detection rules</td>
+                      <td className="p-3">Curated SigmaHQ subset</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">16</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-semibold text-text-primary">Yara detection rules</td>
+                      <td className="p-3">Curated subset</td>
+                      <td className="p-3 font-mono font-bold text-[#00ff88]">14</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+              <p className="text-xs text-text-muted">
+                Refresh from upstream any time: <code className="font-mono text-[#00ff88]">pythia sync</code> — or selectively: <code className="font-mono text-[#00ff88]">pythia sync attck misp-galaxy kev</code>
+              </p>
             </div>
           </section>
         )}
@@ -787,8 +1132,159 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                 </div>
                 <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
                   <li>Reviews pre-seeded nation-state sponsor profiles, aliases, and targeted countries.</li>
-                  <li>Builds visual Diamond Model shapes (Adversary ➡️ Infrastructure ➡️ Capability ➡️ Victim).</li>
+                  <li>Builds visual Diamond Model shapes (Adversary → Infrastructure → Capability → Victim).</li>
                   <li>Organizes historical TTPs to easily identify log coverage gaps in security configurations.</li>
+                </ul>
+              </div>
+
+              {/* Workflow D */}
+              <div className="pt-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="rounded bg-blue-900/20 px-2 py-1 font-mono text-xs font-bold text-blue-400">Workflow D</span>
+                  <h3 className="text-base font-bold font-mono text-text-primary">AI-Assisted Threat Hunt Workbench</h3>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  <strong>Scenario:</strong> Your SOC has anomalous log activity suggesting a living-off-the-land attack. You want to run a structured hypothesis-driven hunt, log observations with confidence ratings, and draft SIEM-ready detections.
+                </p>
+                <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
+                  <div className="text-text-muted"># 1. Create a new hunt session via the API</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/hunts -H "X-API-Key: $KEY" \</div>
+                  <div className="text-[#00ff88] pl-4">-d '{"{"}\"name\":\"Unsigned DLL side-loading hunt\",\"hypothesis\":\"...\"{"}"}'</div>
+                  <div className="text-text-muted"># 2. Log a TTP observation with NATO Admiralty confidence</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/hunts/&lt;id&gt;/observations -H "X-API-Key: $KEY" \</div>
+                  <div className="text-[#00ff88] pl-4">-d '{"{"}\"obs_type\":\"ttp\",\"value\":\"T1574.002\",\"confidence_source\":\"B\",\"confidence_info\":\"2\"{"}"}'</div>
+                  <div className="text-text-muted"># 3. Run Claude AI actor attribution</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/hunts/&lt;id&gt;/suggest-actors -H "X-API-Key: $KEY"</div>
+                </div>
+                <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
+                  <li>Hunt sessions track hypothesis, scope, target sectors, and all analyst observations in one place.</li>
+                  <li>Claude cross-references your observations against 1,180+ actor profiles for attribution suggestions.</li>
+                  <li>Draft Sigma, YARA, or KQL rules from observations and promote them to the global detection library with one click.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Honeypot & SIEM Ops */}
+        {activeSection === 'honeypot-siem' && (
+          <section className="space-y-6">
+            <div>
+              <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Live Collection & Response</span>
+              <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">Honeypot Collection & SIEM Integration</h1>
+              <p className="mt-2 text-sm text-text-muted leading-relaxed">
+                Pythia can operate as an active collection platform, not just a passive intel store. Deploy a Cowrie SSH honeypot to capture real attacker behaviour, automatically enrich and cluster events into named campaigns, push detection rules to your SIEM, and triage incoming alerts — all from one interface.
+              </p>
+            </div>
+
+            <div className="space-y-6 divide-y divide-border">
+              {/* Workflow E */}
+              <div className="pt-4 first:pt-0 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="rounded bg-orange-900/20 px-2 py-1 font-mono text-xs font-bold text-orange-400">Workflow E</span>
+                  <h3 className="text-base font-bold font-mono text-text-primary">Honeypot Deployment & Campaign Analysis</h3>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  <strong>Scenario:</strong> You want to capture real internet attack traffic, automatically enrich each attacker IP, cluster related events into campaigns, and produce CTI reports from first-party honeypot data.
+                </p>
+
+                <div className="rounded-lg border border-border bg-bg-base p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-[#00ff88] font-mono uppercase">Architecture</h4>
+                  <pre className="text-xs font-mono text-text-muted leading-relaxed whitespace-pre-wrap">{`Internet → Cowrie SSH Honeypot (VPS or localhost)
+         │  cowrie.json log
+         ▼
+honeypot-forwarder (tails log, batches every 5s)
+         │  POST /v1/honeypot/events/bulk
+         ▼
+Pythia (normalize → enrich → store)
+         │
+         ├── GeoIP + ASN (MaxMind)
+         ├── AbuseIPDB score
+         ├── GreyNoise classification
+         └── VirusTotal detections
+         │
+Campaign clustering (every 15 min via scheduler)
+         │
+Auto-generated Sigma rules + CTI report`}</pre>
+                </div>
+
+                <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
+                  <div className="text-text-muted"># Start Pythia + Cowrie together</div>
+                  <div className="text-[#00ff88]">docker compose -f docker-compose.yml -f docker-compose.honeypot.yml up -d</div>
+                  <div className="text-text-muted"># Manually trigger campaign clustering (demo/testing)</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/honeypot/detect-now -H "X-API-Key: $KEY"</div>
+                  <div className="text-text-muted"># Generate a CTI report for a campaign</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/honeypot/campaigns/&lt;id&gt;/generate-report -H "X-API-Key: $KEY"</div>
+                  <div className="text-text-muted"># Pull the IP blocklist for your firewall</div>
+                  <div className="text-[#00ff88]">curl http://localhost:8000/v1/honeypot/feeds/blocklist.txt</div>
+                </div>
+                <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
+                  <li>Required config: set <code className="font-mono text-[#00ff88]">PYTHIA_HONEYPOT_INGEST_ENABLED=true</code> and <code className="font-mono text-[#00ff88]">PYTHIA_ENABLE_SCHEDULER=true</code> in <code className="font-mono">.env</code>.</li>
+                  <li>For VPS deployment (real internet traffic), see <strong>docs/honeypot-siem-setup.md</strong> — includes Tailscale tunnel setup so your VPS can reach Pythia privately.</li>
+                  <li>Export campaign IOCs as a STIX 2.1 bundle from <code className="font-mono text-[#00ff88]">/v1/honeypot/taxii/honeypot-iocs</code> for downstream TAXII clients.</li>
+                  <li>The live feed in the <strong>Honeypot</strong> page updates via WebSocket (<code className="font-mono text-[#00ff88]">ws://localhost:8000/v1/honeypot/stream</code>) — no polling required.</li>
+                </ul>
+              </div>
+
+              {/* Workflow F */}
+              <div className="pt-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="rounded bg-red-900/20 px-2 py-1 font-mono text-xs font-bold text-red-400">Workflow F</span>
+                  <h3 className="text-base font-bold font-mono text-text-primary">SIEM Rule Deployment & Alert Triage</h3>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  <strong>Scenario:</strong> You have a Wazuh (or Splunk / Elastic) instance and want to push Pythia's Sigma detection rules to it, then receive and triage alerts back in Pythia — correlating fired alerts to known honeypot campaigns automatically.
+                </p>
+
+                <div className="rounded-lg border border-border bg-bg-base p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-[#00ff88] font-mono uppercase">Supported SIEM Backends</h4>
+                  <div className="overflow-x-auto rounded border border-border">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-bg-elevated border-b border-border font-mono text-text-primary">
+                        <tr>
+                          <th className="p-2.5">PYTHIA_SIEM_TYPE</th>
+                          <th className="p-2.5">Rule Format</th>
+                          <th className="p-2.5">Alert Receiver</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border text-text-muted">
+                        <tr>
+                          <td className="p-2.5 font-mono text-[#00ff88]">wazuh</td>
+                          <td className="p-2.5">Sigma → Wazuh XML rules</td>
+                          <td className="p-2.5">Custom integration script (see setup guide)</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-mono text-[#00ff88]">splunk</td>
+                          <td className="p-2.5">Sigma → SPL saved searches</td>
+                          <td className="p-2.5">Splunk alert webhook action</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-mono text-[#00ff88]">elastic</td>
+                          <td className="p-2.5">Sigma → EQL detection rules</td>
+                          <td className="p-2.5">Elastic webhook connector</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
+                  <div className="text-text-muted"># 1. Configure SIEM credentials in .env, then restart</div>
+                  <div className="text-[#00ff88]">PYTHIA_SIEM_TYPE=wazuh</div>
+                  <div className="text-[#00ff88]">PYTHIA_SIEM_URL=https://localhost:55000</div>
+                  <div className="text-text-muted"># 2. Verify connection from the Operations page, or via API</div>
+                  <div className="text-[#00ff88]">curl http://localhost:8000/v1/siem/status</div>
+                  <div className="text-text-muted"># 3. Deploy all active Sigma rules</div>
+                  <div className="text-[#00ff88]">curl -X POST http://localhost:8000/v1/siem/rules/deploy-all -H "X-API-Key: $KEY"</div>
+                  <div className="text-text-muted"># 4. Triage an incoming alert</div>
+                  <div className="text-[#00ff88]">curl -X PATCH http://localhost:8000/v1/siem/alerts/&lt;id&gt;/triage -H "X-API-Key: $KEY" \</div>
+                  <div className="text-[#00ff88] pl-4">-d '{"{"}\"triage_status\":\"true_positive\",\"triaged_by\":\"analyst1\"{"}"}'</div>
+                </div>
+                <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
+                  <li>Start Wazuh locally: <code className="font-mono text-[#00ff88]">docker compose -f docker-compose.siem.yml up -d</code> (requires ~4 GB RAM).</li>
+                  <li>Wazuh must be configured to webhook back to <code className="font-mono text-[#00ff88]">POST /v1/siem/alerts</code> — see <strong>docs/honeypot-siem-setup.md</strong> for the integration script.</li>
+                  <li>Incoming alerts are auto-correlated to a <strong>HoneypotCampaign</strong> if the attacker IP is in a known campaign — visible in the Operations page alert detail.</li>
+                  <li>Watchlist webhooks (Slack/Discord) fire automatically when a campaign-correlated alert is received.</li>
                 </ul>
               </div>
             </div>
@@ -819,8 +1315,12 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                       className="flex items-center gap-3 bg-bg-elevated px-4 py-3 border-b border-border cursor-pointer hover:bg-bg-elevated/80 transition-colors"
                     >
                       <span className={`rounded px-2.5 py-1 text-xs font-extrabold font-mono ${
-                        endpoint.method === 'POST' 
-                          ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        endpoint.method === 'POST'
+                          ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                          : endpoint.method === 'DELETE'
+                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                          : endpoint.method === 'PATCH' || endpoint.method === 'PUT'
+                          ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                           : 'bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/20'
                       }`}>
                         {endpoint.method}

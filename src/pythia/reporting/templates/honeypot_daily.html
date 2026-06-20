@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>{{ title or "Honeypot Daily Summary" }}</h1>
+<div style="margin-bottom: 12px;"></div>
+
+<!-- Summary strip -->
+<div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+  {% for label, value in [
+      ("Total Events", event_count),
+      ("Unique Attackers", unique_attackers),
+      ("New Campaigns", new_campaigns),
+      ("New Payload Hashes", new_payload_hashes)
+  ] %}
+  <div style="flex: 1; min-width: 100px; background: #f8f9fa; border: 1px solid #e9ecef;
+              border-top: 3px solid #e94560; padding: 10px; text-align: center;">
+    <div style="font-size: 18pt; font-weight: 900; color: #e94560;">{{ value }}</div>
+    <div style="font-size: 8pt; color: #888; text-transform: uppercase; letter-spacing: 1px;">{{ label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- By Honeypot Type -->
+{% if by_honeypot_type %}
+<div class="section">
+  <h2>Events by Honeypot Type</h2>
+  <table>
+    <tr><th>Honeypot</th><th>Events</th></tr>
+    {% for htype, count in by_honeypot_type.items() %}
+    <tr><td>{{ htype }}</td><td>{{ count }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Top Attackers -->
+{% if top_ips %}
+<div class="section">
+  <h2>Top 10 Attacker IPs</h2>
+  <table>
+    <tr><th>#</th><th>IP Address</th><th>Events</th></tr>
+    {% for ip, count in top_ips %}
+    <tr>
+      <td style="color: #888;">{{ loop.index }}</td>
+      <td style="font-family: 'Courier New', monospace; font-size: 9pt;">{{ ip }}</td>
+      <td>{{ count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Top Countries -->
+{% if top_countries %}
+<div class="section">
+  <h2>Geographic Distribution</h2>
+  <table>
+    <tr><th>Country Code</th><th>Events</th></tr>
+    {% for country, count in top_countries %}
+    <tr>
+      <td><strong>{{ country }}</strong></td>
+      <td>{{ count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Top Ports -->
+{% if top_ports %}
+<div class="section">
+  <h2>Top Target Ports</h2>
+  <table>
+    <tr><th>Port</th><th>Events</th></tr>
+    {% for port, count in top_ports %}
+    <tr>
+      <td style="font-family: 'Courier New', monospace;">{{ port }}</td>
+      <td>{{ count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- Credentials -->
+{% if top_usernames %}
+<div class="section">
+  <h2>Top Attempted Usernames</h2>
+  <table>
+    <tr><th>Username</th><th>Attempts</th></tr>
+    {% for username, count in top_usernames %}
+    <tr>
+      <td style="font-family: 'Courier New', monospace; font-size: 9pt;">{{ username }}</td>
+      <td>{{ count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<!-- New Campaigns -->
+{% if new_campaign_names %}
+<div class="section">
+  <h2>New Campaigns Detected</h2>
+  {% for name in new_campaign_names %}
+  <div style="padding: 6px 0; border-bottom: 1px solid #eee; font-family: 'Courier New', monospace; font-size: 9pt;">
+    {{ name }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Payload Hashes -->
+{% if payload_hashes %}
+<div class="section">
+  <h2>New Payload Hashes (Dionaea Captures)</h2>
+  {% for h in payload_hashes %}
+  <div style="padding: 3px 0; font-family: 'Courier New', monospace; font-size: 8pt; color: #555;">
+    {{ h }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

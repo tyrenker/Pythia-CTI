@@ -6,13 +6,14 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
-Template = Literal["tactical", "executive"]
+Template = Literal["tactical", "executive", "honeypot_daily", "campaign_intel"]
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
 
 def _render_html(template_name: str, context: dict[str, Any]) -> str:
     from jinja2 import Environment, FileSystemLoader, select_autoescape
+
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -41,7 +42,9 @@ def render_hunt_report(hunt: Any, template: str = "executive") -> bytes:
         "title": hunt.name,
         "tlp": "AMBER",
         "tlp_label": "TLP:AMBER",
-        "report_type": "Hunt Executive Summary" if template == "executive" else "Hunt Technical Report",
+        "report_type": "Hunt Executive Summary"
+        if template == "executive"
+        else "Hunt Technical Report",
         "generated_date": date.today().isoformat(),
         "pub_date": None,
         "hypothesis": hunt.hypothesis,
@@ -65,6 +68,43 @@ def render_hunt_report(hunt: Any, template: str = "executive") -> bytes:
     return HTML(string=html_content, base_url=str(_TEMPLATES_DIR)).write_pdf()  # type: ignore[return-value]
 
 
+def render_honeypot_report(report: Any, template: Template = "honeypot_daily") -> bytes:
+    """Render a honeypot daily or campaign report to PDF bytes."""
+    from weasyprint import HTML
+
+    pd: dict[str, Any] = report.parsed_data or {}
+    context: dict[str, Any] = {
+        "report_id": report.id,
+        "title": report.title or "Honeypot Report",
+        "tlp": report.tlp,
+        "tlp_label": f"TLP:{report.tlp}",
+        "report_type": pd.get("report_type", template),
+        "generated_date": date.today().isoformat(),
+        **pd,
+    }
+
+    if template == "campaign_intel":
+        tmpl_name = "executive"
+        context["summary"] = pd.get("full_report") or pd.get("summary")
+        context["actors"] = []
+        context["ttps"] = pd.get("ttps") or []
+        context["iocs"] = pd.get("iocs") or []
+        context["cves"] = []
+        context["sectors_targeted"] = []
+        context["geographies_targeted"] = []
+        context["killchain_phases"] = []
+        context["atlas_techniques"] = []
+        context["owasp_llm"] = []
+        context["admiralty"] = pd.get("confidence_admiralty", "B2")
+        context["ioc_count"] = len(pd.get("iocs") or [])
+        context["source_url"] = None
+    else:
+        tmpl_name = "honeypot_daily"
+
+    html_content = _render_html(tmpl_name, context)
+    return HTML(string=html_content, base_url=str(_TEMPLATES_DIR)).write_pdf()  # type: ignore[return-value]
+
+
 def render_report(report: Any, template: Template = "executive") -> bytes:
     """Render a SourceReport to PDF bytes.
 
@@ -79,7 +119,9 @@ def render_report(report: Any, template: Template = "executive") -> bytes:
         "title": report.title or pd.get("title") or "Threat Intelligence Report",
         "tlp": report.tlp,
         "tlp_label": f"TLP:{report.tlp}",
-        "report_type": "Executive Summary Report" if template == "executive" else "Tactical Analysis Report",
+        "report_type": "Executive Summary Report"
+        if template == "executive"
+        else "Tactical Analysis Report",
         "generated_date": date.today().isoformat(),
         "pub_date": report.publication_date,
         "summary": pd.get("summary"),

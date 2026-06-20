@@ -21,6 +21,8 @@ import { RecentArticles } from './pages/RecentArticles'
 import { HuntList } from './pages/HuntList'
 import { HuntWorkbench } from './pages/HuntWorkbench'
 import { DarkWebMonitor } from './pages/DarkWebMonitor'
+import { Honeypot } from './pages/Honeypot'
+import { Operations } from './pages/Operations'
 
 export default function App() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="/articles" element={<RecentArticles />} />
           <Route path="/hunt" element={<HuntList />} />
           <Route path="/hunt/:id" element={<HuntWorkbench />} />
+          <Route path="/honeypot" element={<Honeypot />} />
+          <Route path="/operations" element={<Operations />} />
         </Routes>
       </Shell>
     </BrowserRouter>

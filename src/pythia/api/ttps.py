@@ -63,7 +63,10 @@ async def get_ttp(
     if tech_upper.startswith("AML."):
         obj = session.get(AtlasTechnique, technique_id) or session.get(AtlasTechnique, tech_upper)
         if not obj:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ATLAS technique '{technique_id}' not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"ATLAS technique '{technique_id}' not found",
+            )
         return AtlasTechniqueDetail(
             technique_id=obj.technique_id,
             name=obj.name,
@@ -77,7 +80,10 @@ async def get_ttp(
     # MITRE ATT&CK (T*)
     obj = session.get(AttckTechnique, tech_upper)
     if not obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ATT&CK technique '{technique_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"ATT&CK technique '{technique_id}' not found",
+        )
     return TechniqueDetail(
         technique_id=obj.technique_id,
         name=obj.name,
@@ -108,29 +114,34 @@ async def get_hunt_queries(
     tech = session.get(AttckTechnique, tech_upper)
     if not tech:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail=f"Technique '{technique_id}' not found")
 
     # Find rules covering this technique
     rules = session.query(DetectionRule).all()
-    matching_rules = [r for r in rules if tech_upper in [t.upper() for t in (r.technique_ids or [])]]
+    matching_rules = [
+        r for r in rules if tech_upper in [t.upper() for t in (r.technique_ids or [])]
+    ]
 
     hunt_queries: list[dict[str, object]] = []
     for rule in matching_rules:
         splunk = sigma_convert(rule.content, "splunk")
         elastic = sigma_convert(rule.content, "elastic")
         sentinel = sigma_convert(rule.content, "sentinel")
-        hunt_queries.append({
-            "id": rule.id,
-            "title": rule.title,
-            "technique_ids": rule.technique_ids or [],
-            "severity": rule.severity or "medium",
-            "tags": [],
-            "splunk_spl": splunk or None,
-            "elastic_kql": elastic or None,
-            "sentinel_kql": sentinel or None,
-            "sigma_yaml": rule.content,
-            "rule_type": rule.rule_type,
-        })
+        hunt_queries.append(
+            {
+                "id": rule.id,
+                "title": rule.title,
+                "technique_ids": rule.technique_ids or [],
+                "severity": rule.severity or "medium",
+                "tags": [],
+                "splunk_spl": splunk or None,
+                "elastic_kql": elastic or None,
+                "sentinel_kql": sentinel or None,
+                "sigma_yaml": rule.content,
+                "rule_type": rule.rule_type,
+            }
+        )
 
     return {
         "technique_id": tech.technique_id,
