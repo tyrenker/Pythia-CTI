@@ -918,6 +918,43 @@ def seed_abuse_ch(session: Any, dry_run: bool) -> int:
     return total_added
 
 
+def seed_dark_web_sources(session: Any, dry_run: bool) -> int:
+    """Populate dark_web_forum_sources from data/seed/dark_web_sources.json (upsert by onion_url)."""
+    from pythia.models.dark_web import DarkWebForumSource
+
+    sources_path = _DATA_DIR / "seed" / "dark_web_sources.json"
+    if not sources_path.exists():
+        print("  dark-web: data/seed/dark_web_sources.json not found — skipping")
+        return 0
+
+    with sources_path.open() as f:
+        entries: list[dict[str, Any]] = json.load(f)
+
+    added = 0
+    for entry in entries:
+        onion_url = entry["onion_url"]
+        if dry_run:
+            added += 1
+            continue
+        existing = session.query(DarkWebForumSource).filter_by(onion_url=onion_url).first()
+        if not existing:
+            session.add(DarkWebForumSource(
+                name=entry["name"],
+                category=entry["category"],
+                onion_url=onion_url,
+                poll_interval_h=entry.get("poll_interval_h", 4),
+                auto_ingest=entry.get("auto_ingest", False),
+                description=entry.get("description"),
+            ))
+            added += 1
+
+    if not dry_run:
+        session.commit()
+    print(f"  dark-web: {added} sources added")
+    _log_sync_status(session, "dark_web", "ok", dry_run)
+    return added
+
+
 def seed_intel_feeds(session: Any, dry_run: bool) -> int:
     """Populate intel_feed_sources from data/seed/intel_feeds.json (upsert by URL)."""
     from pythia.models.intel_feed import IntelFeedSource
@@ -1321,6 +1358,9 @@ def run(sources: list[str] | None = None, dry_run: bool = False) -> None:
 
         if "intel-feeds" in targets:
             total += seed_intel_feeds(session, dry_run)
+
+        if "dark-web" in targets:
+            total += seed_dark_web_sources(session, dry_run)
 
         if "otx" in targets:
             total += seed_otx_actors(session, dry_run)

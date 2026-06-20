@@ -1,0 +1,82 @@
+[
+  {
+    "name": "LockBit 3.0 Leak Blog",
+    "category": "ransomware",
+    "onion_url": "lockbit3753ekiocyo5epmpy6klmejchjtzddoekjlnt6mu3qh4de2id.onion",
+    "poll_interval_h": 4,
+    "auto_ingest": false,
+    "description": "LockBit RaaS victim disclosure blog. Static HTML victim cards with org name, sector, deadline timer, and data size claim."
+  },
+  {
+    "name": "ALPHV / BlackCat Leak Site",
+    "category": "ransomware",
+    "onion_url": "alphvmmm27o3abo3r2mlmjrpdmzle3rykajqc5xsj7j7ejksbpsa36ad.onion",
+    "poll_interval_h": 4,
+    "auto_ingest": false,
+    "description": "ALPHV/BlackCat victim listing. Includes file tree previews and negotiation excerpts for some victims."
+  },
+  {
+    "name": "Cl0p Leak Site",
+    "category": "ransomware",
+    "onion_url": "ekbgzchl6x6vcr2vczg3brvlio6zzw7gkq57ge7teoucfkfxkzfspxid.onion",
+    "poll_interval_h": 6,
+    "auto_ingest": false,
+    "description": "Cl0p victim disclosures. Primarily MOVEit and GoAnywhere campaign victims."
+  },
+  {
+    "name": "RansomHub Leak Blog",
+    "category": "ransomware",
+    "onion_url": "ransomxifxwc5eteopdobynonjctkxxvap77yqifu2emfbecgbqdw6qd.onion",
+    "poll_interval_h": 4,
+    "auto_ingest": false,
+    "description": "RansomHub active victim listings with countdown timers and data descriptions."
+  },
+  {
+    "name": "Akira Leak Site",
+    "category": "ransomware",
+    "onion_url": "akiral2iz6a7qgd3ayp3l6yub7xx2uep76idk3u2kollpj5z3z636bad.onion",
+    "poll_interval_h": 6,
+    "auto_ingest": false,
+    "description": "Akira ransomware victim profiles including sector and data category descriptions."
+  },
+  {
+    "name": "Play Ransomware Blog",
+    "category": "ransomware",
+    "onion_url": "mbrlkbtq5byzdnarwjhpkpxjfhqmejbsbdxbw7lkbl4n4oczlhkznad.onion",
+    "poll_interval_h": 6,
+    "auto_ingest": false,
+    "description": "Play ransomware victim disclosures. Relatively sparse but consistent."
+  },
+  {
+    "name": "Hunters International",
+    "category": "ransomware",
+    "onion_url": "huntersitezamxr3pq2yhtbrmicwmrkzwonmxqk5fpjpfn4vkfevdlid.onion",
+    "poll_interval_h": 6,
+    "auto_ingest": false,
+    "description": "Hunters International victim listing with file counts and total data sizes."
+  },
+  {
+    "name": "BianLian Leak Blog",
+    "category": "ransomware",
+    "onion_url": "bianlianlbc5an4kgnay3opdemgcryg2kpnutyfier6e3gr65kiivnoid.onion",
+    "poll_interval_h": 8,
+    "auto_ingest": false,
+    "description": "BianLian ransomware victim disclosures. Pivoted to pure exfiltration after FBI/Avast decryptor release."
+  },
+  {
+    "name": "Medusa Blog",
+    "category": "ransomware",
+    "onion_url": "medusaxko7zqoeanh6odv4sxfxcgb7jqjlvqjzxqkcwhdvnqfrk4ihid.onion",
+    "poll_interval_h": 6,
+    "auto_ingest": false,
+    "description": "Medusa ransomware group victim listings with claimed screenshots and deadline timers."
+  },
+  {
+    "name": "DragonForce Leak Site",
+    "category": "ransomware",
+    "onion_url": "dragonforce2ovp3p3jqynvvtvmm6bepid32sj7u26aqscjnhgpjhsnid.onion",
+    "poll_interval_h": 8,
+    "auto_ingest": false,
+    "description": "DragonForce — RaaS operator, active disclosures in APAC and MEA sectors."
+  }
+]

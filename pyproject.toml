@@ -37,9 +37,16 @@ dependencies = [
 ingestion = [
     "anthropic>=0.40",
     "httpx>=0.27",
+    "httpx[socks]>=0.27",
     "trafilatura>=1.10",
     "selectolax>=0.3",
     "feedparser>=6.0",
+]
+dark-web = [
+    "httpx[socks]>=0.27",
+    "stem>=1.8",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
 ]
 detections = [
     "pysigma>=0.11",
@@ -67,7 +74,7 @@ dev = [
     "mypy>=1.10",
 ]
 all = [
-    "pythia[ingestion,detections,reporting,scheduling]",
+    "pythia[ingestion,dark-web,detections,reporting,scheduling]",
 ]
 
 [project.scripts]
@@ -115,7 +122,7 @@ disallow_untyped_defs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["trafilatura.*", "selectolax.*", "weasyprint.*", "yara.*", "apscheduler.*", "feedparser.*"]
+module = ["trafilatura.*", "selectolax.*", "weasyprint.*", "yara.*", "apscheduler.*", "feedparser.*", "stem.*", "bs4.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
