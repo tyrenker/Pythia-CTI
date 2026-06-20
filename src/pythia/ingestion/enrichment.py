@@ -93,6 +93,7 @@ def rescore_actor(actor: ThreatActor, session: Session) -> int:
             covered.update(tactics_val)
         elif isinstance(tactics_val, str):
             import contextlib
+
             with contextlib.suppress(Exception):
                 covered.update(json.loads(tactics_val))
 

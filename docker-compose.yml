@@ -26,6 +26,9 @@ services:
       PYTHIA_DATABASE_URL: "sqlite:////app/db/pythia.db"
       PYTHIA_DB_FILE: "/app/db/pythia.db"
       PYTHIA_TOR_HOST: "tor"
+      # GeoIP databases live in the mounted ./data/geoip/ volume
+      MAXMIND_DB_PATH: "/app/data/geoip/GeoLite2-City.mmdb"
+      MAXMIND_ASN_DB_PATH: "/app/data/geoip/GeoLite2-ASN.mmdb"
     volumes:
       - ./data:/app/data      # sigma rules, yara rules, seed data
       - ./db:/app/db          # persistent user data — never deleted on restart

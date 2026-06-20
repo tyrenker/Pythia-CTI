@@ -17,6 +17,7 @@ from pythia.api import (
     analytics,
     dark_web,
     feed,
+    honeypot,
     hunts,
     intel_feed,
     iocs,
@@ -24,6 +25,7 @@ from pythia.api import (
     parse,
     reports,
     rules,
+    siem,
     sync,
     threats,
     ttps,
@@ -86,6 +88,8 @@ def create_app() -> FastAPI:
     app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])
     app.include_router(hunts.router, prefix="/v1/hunts", tags=["hunts"])
     app.include_router(dark_web.router, prefix="/v1/dark-web", tags=["dark-web"])
+    app.include_router(honeypot.router, prefix="/v1/honeypot", tags=["honeypot"])
+    app.include_router(siem.router, prefix="/v1/siem", tags=["siem"])
 
     # Serve built frontend — must be last so it doesn't shadow /v1/* or /docs
     _frontend_dist = (

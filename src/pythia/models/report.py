@@ -20,7 +20,9 @@ class SourceReport(Base):
     url: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     publication_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    status: Mapped[str] = mapped_column(String, default="pending_review")  # pending_review|accepted|rejected
+    status: Mapped[str] = mapped_column(
+        String, default="pending_review"
+    )  # pending_review|accepted|rejected
     parsed_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     tlp: Mapped[str] = mapped_column(String, default="GREEN")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -39,5 +41,7 @@ class BusinessImpactBrief(Base):
     operational_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     regulatory_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     board_actions: Mapped[list] = mapped_column(JSON, default=list)
-    risk_score: Mapped[str | None] = mapped_column(String, nullable=True)  # Low|Medium|High|Critical
+    risk_score: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Low|Medium|High|Critical
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

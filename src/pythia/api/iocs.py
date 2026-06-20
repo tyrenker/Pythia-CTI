@@ -32,10 +32,14 @@ class IoCDetail(BaseModel):
 
 @router.get("", response_model=list[IoCDetail])
 async def list_iocs(
-    type: str | None = Query(default=None, description="Filter by IoC type (e.g. cve, ip, domain, hash)"),
+    type: str | None = Query(
+        default=None, description="Filter by IoC type (e.g. cve, ip, domain, hash)"
+    ),
     pyramid_tier: str | None = Query(default=None, description="Filter by Pyramid of Pain tier"),
     actor_id: str | None = Query(default=None, description="Filter by linked actor UUID"),
-    tlp: str | None = Query(default=None, description="Filter by TLP marking (WHITE, GREEN, AMBER, RED)"),
+    tlp: str | None = Query(
+        default=None, description="Filter by TLP marking (WHITE, GREEN, AMBER, RED)"
+    ),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
@@ -98,7 +102,9 @@ async def get_ioc_stix(
     """Export a single IoC as a STIX 2.1 indicator bundle."""
     ioc = session.get(IoC, ioc_id)
     if not ioc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"IoC '{ioc_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"IoC '{ioc_id}' not found"
+        )
     bundle = export_ioc(ioc)
     return JSONResponse(content=bundle, media_type="application/stix+json")
 
@@ -115,7 +121,9 @@ async def get_ioc(
         .first()
     )
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"IoC '{ioc_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"IoC '{ioc_id}' not found"
+        )
     ioc, actor_name = result
     return IoCDetail(
         id=ioc.id,

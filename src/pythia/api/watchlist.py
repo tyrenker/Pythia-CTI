@@ -24,9 +24,15 @@ router = APIRouter()
 
 class WatchlistCreate(BaseModel):
     name: str = Field(description="Human-readable label for this subscription")
-    filter_actor: str | None = Field(default=None, description="Alert when actor name contains this substring")
-    filter_ttp: str | None = Field(default=None, description="Alert when TTPs include this technique ID (e.g. T1566)")
-    filter_sector: str | None = Field(default=None, description="Alert when sectors_targeted contains this substring")
+    filter_actor: str | None = Field(
+        default=None, description="Alert when actor name contains this substring"
+    )
+    filter_ttp: str | None = Field(
+        default=None, description="Alert when TTPs include this technique ID (e.g. T1566)"
+    )
+    filter_sector: str | None = Field(
+        default=None, description="Alert when sectors_targeted contains this substring"
+    )
     webhook_url: str = Field(description="URL to POST to on match")
     webhook_type: str = Field(default="slack", description="slack | discord | generic")
 
@@ -42,7 +48,12 @@ class WatchlistOut(BaseModel):
     enabled: bool
 
 
-@router.post("", response_model=WatchlistOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post(
+    "",
+    response_model=WatchlistOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key)],
+)
 async def create_watchlist(
     body: WatchlistCreate,
     session: Session = Depends(get_session),
@@ -96,7 +107,11 @@ async def list_watchlists(
     ]
 
 
-@router.delete("/{watchlist_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
+@router.delete(
+    "/{watchlist_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_api_key)],
+)
 async def delete_watchlist(
     watchlist_id: str,
     session: Session = Depends(get_session),
@@ -104,7 +119,9 @@ async def delete_watchlist(
     """Delete a watchlist subscription."""
     wl = session.get(Watchlist, watchlist_id)
     if not wl:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Watchlist '{watchlist_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Watchlist '{watchlist_id}' not found"
+        )
     session.delete(wl)
     session.commit()
 
@@ -118,9 +135,11 @@ class TestPayload(BaseModel):
 async def test_webhook(body: TestPayload) -> dict[str, str]:
     """Send a test ping to a webhook URL to verify connectivity."""
     if body.webhook_type in ("slack", "discord"):
-        payload = json.dumps({
-            "text": ":white_check_mark: *Pythia Watchlist* — test ping successful. Alerts are wired up.",
-        }).encode()
+        payload = json.dumps(
+            {
+                "text": ":white_check_mark: *Pythia Watchlist* — test ping successful. Alerts are wired up.",
+            }
+        ).encode()
     else:
         payload = json.dumps({"event": "test", "source": "pythia"}).encode()
 
