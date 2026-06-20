@@ -54,7 +54,7 @@ export function ActorDetail() {
                 {[1, 2, 3, 4, 5].map(n => (
                   <span
                     key={n}
-                    className={n <= actor.sophistication! ? 'text-accent-bright' : 'text-[#2a2a3e]'}
+                    className={n <= actor.sophistication! ? 'text-[#00ff88]' : 'text-[#2a2a3e]'}
                   >
                     ●
                   </span>
@@ -87,7 +87,7 @@ export function ActorDetail() {
                 }}
                 className={`px-4 py-2 text-xs font-medium transition-colors ${
                   tab === t.key
-                    ? 'border-b-2 border-accent-bright text-text-primary -mb-px'
+                    ? 'border-b-2 border-[#00ff88] text-text-primary -mb-px'
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
@@ -193,7 +193,7 @@ export function ActorDetail() {
                   },
                 ].map(({ label, content }) => (
                   <div key={label} className="rounded-lg border border-[#2a2a3e] p-4">
-                    <h3 className="mb-2 text-xs font-semibold text-accent-bright">{label}</h3>
+                    <h3 className="mb-2 text-xs font-semibold text-[#00ff88]">{label}</h3>
                     <ul className="space-y-1">
                       {(content as string[]).filter(Boolean).map((line, i) => (
                         <li key={i} className="text-xs text-text-primary">{line}</li>

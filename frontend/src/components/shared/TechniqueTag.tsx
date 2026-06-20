@@ -13,10 +13,10 @@ export function TechniqueTag({ id, className }: Props) {
     <button
       onClick={() => navigate(`/ttps/${id}`)}
       className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-xs font-mono font-medium transition-opacity hover:opacity-80',
+        'inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium transition-all duration-150 rounded-none',
         isAtlas
-          ? 'bg-cyan-900 text-cyan-300'
-          : 'bg-purple-900 text-purple-300',
+          ? 'border border-[#00ff88] text-[#00ff88] bg-[#00ff88]/10 hover:bg-[#00ff88]/20 hover:shadow-[0_0_8px_rgba(0,212,255,0.3)]'
+          : 'border border-[#ff00ff] text-[#ff00ff] bg-[#ff00ff]/10 hover:bg-[#ff00ff]/20 hover:shadow-[0_0_8px_rgba(255,0,255,0.3)]',
         className,
       )}
     >

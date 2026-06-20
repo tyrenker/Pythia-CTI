@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --bg-base: #0d0d14;
-  --bg-surface: #13131f;
-  --bg-elevated: #1a1a2e;
-  --border: #2a2a3e;
-  --text-primary: #e8e8f0;
-  --text-muted: #6b6b8a;
-  --accent: #7c3aed;
-  --accent-bright: #06b6d4;
-  --success: #22c55e;
+  --bg-base: #0a0a0f;
+  --bg-surface: #12121a;
+  --bg-elevated: #1c1c2e;
+  --border: #2a2a3a;
+  --text-primary: #e0e0e0;
+  --text-muted: #6b7280;
+  --accent: #00ff88;
+  --accent-secondary: #ff00ff;
+  --accent-tertiary: #00ff88;
+  --success: #00ff88;
   --warning: #f59e0b;
-  --danger: #ef4444;
+  --danger: #ff3366;
 }
 
 * {
@@ -23,28 +24,159 @@
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
+  background-image:
+    linear-gradient(rgba(0, 255, 136, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.022) 1px, transparent 1px);
+  background-size: 60px 60px;
+  min-height: 100vh;
 }
 
-/* Scrollbar */
+/* Scanline overlay — subtle CRT texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.07) 2px,
+    rgba(0, 0, 0, 0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────────────────── */
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glitch {
+  0%, 88%, 100% { transform: translate(0); }
+  90% { transform: translate(-2px, 1px); }
+  92% { transform: translate(2px, -1px); }
+  94% { transform: translate(-1px, 2px); }
+  96% { transform: translate(0); }
+}
+
+@keyframes rgb-shift {
+  0%, 100% { text-shadow: -1px 0 #ff00ff, 1px 0 #00ff88; }
+  50% { text-shadow: 1px 0 #ff00ff, -1px 0 #00ff88; }
+}
+
+@keyframes neon-flicker {
+  0%, 19%, 21%, 23%, 100% { opacity: 1; }
+  20%, 22% { opacity: 0.4; }
+}
+
+@keyframes border-march {
+  0% { background-position: 0 0, 100% 0, 100% 100%, 0 100%; }
+  100% { background-position: 100% 0, 100% 100%, 0 100%, 0 0; }
+}
+
+/* ── Utility classes ───────────────────────────────────────────────────────── */
+
+/* Chamfered card corners */
+.cyber-chamfer {
+  clip-path: polygon(
+    0 10px, 10px 0,
+    calc(100% - 10px) 0, 100% 10px,
+    100% calc(100% - 10px), calc(100% - 10px) 100%,
+    10px 100%, 0 calc(100% - 10px)
+  );
+}
+
+.cyber-chamfer-sm {
+  clip-path: polygon(
+    0 6px, 6px 0,
+    calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px)
+  );
+}
+
+.neon-text {
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+}
+
+.glitch-text {
+  animation: glitch 10s ease-in-out infinite;
+}
+
+.rgb-shift {
+  animation: rgb-shift 3s ease-in-out infinite;
+}
+
+/* Terminal cursor blink */
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Corner decoration for cards */
+.corner-deco {
+  position: relative;
+}
+.corner-deco::before,
+.corner-deco::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--accent);
+  border-style: solid;
+  opacity: 0.5;
+  transition: opacity 200ms;
+}
+.corner-deco::before {
+  top: 0; left: 0;
+  border-width: 1px 0 0 1px;
+}
+.corner-deco::after {
+  bottom: 0; right: 0;
+  border-width: 0 1px 1px 0;
+}
+.corner-deco:hover::before,
+.corner-deco:hover::after {
+  opacity: 1;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-base);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  box-shadow: 0 0 10px var(--accent);
 }
 
-/* Focus rings */
+/* ── Focus rings ───────────────────────────────────────────────────────────── */
+
 :focus-visible {
-  outline: 2px solid var(--accent-bright);
+  outline: 1px solid var(--accent);
   outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15);
+}
+
+/* ── Recharts overrides ────────────────────────────────────────────────────── */
+
+.recharts-cartesian-axis-tick-value {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  font-family: 'JetBrains Mono', monospace;
 }

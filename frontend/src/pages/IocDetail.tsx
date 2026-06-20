@@ -32,7 +32,7 @@ export function IocDetail() {
     { label: 'TLP', value: <TlpBadge tlp={ioc.tlp} /> },
     { label: 'Actor', value: ioc.actor_id ?? '—' },
     { label: 'Source URL', value: ioc.source_url ? (
-      <a href={ioc.source_url} target="_blank" rel="noreferrer" className="text-accent-bright hover:underline">
+      <a href={ioc.source_url} target="_blank" rel="noreferrer" className="text-[#00ff88] hover:underline">
         {ioc.source_url}
       </a>
     ) : '—' },

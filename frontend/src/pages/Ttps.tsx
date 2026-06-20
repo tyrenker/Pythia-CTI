@@ -7,6 +7,7 @@ import { DataTable } from '@/components/shared/DataTable'
 import { FilterBar } from '@/components/shared/FilterBar'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { ResultCount } from '@/components/shared/ResultCount'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { StatStrip } from '@/components/shared/StatStrip'
 import { useDebounce } from '@/hooks/useDebounce'
 import { cn } from '@/lib/utils'
@@ -99,7 +100,7 @@ export function Ttps() {
     {
       label: 'Domains',
       value: 3,
-      color: 'text-cyan-400',
+      color: 'text-[#00ff88]/80',
       icon: ShieldCheck,
     },
     {
@@ -119,7 +120,7 @@ export function Ttps() {
           className={cn(
             'rounded-md px-2 py-0.5 font-mono text-sm font-bold',
             t.technique_id.startsWith('AML')
-              ? 'bg-cyan-900/40 text-cyan-300'
+              ? 'bg-[#00ff88]/10 text-[#00ff88]'
               : 'bg-purple-900/40 text-purple-300',
           )}
         >
@@ -192,7 +193,7 @@ export function Ttps() {
                   className={cn(
                     'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
                     isActive
-                      ? 'border-accent-bright bg-accent-bright/20 text-accent-bright'
+                      ? 'border-[#00ff88] bg-[#00ff88]/20 text-[#00ff88]'
                       : intensity > 0.6
                       ? 'border-purple-700 bg-purple-900/60 text-purple-200 hover:border-purple-500'
                       : intensity > 0.3
@@ -217,16 +218,15 @@ export function Ttps() {
         activeCount={activeFilterCount}
         onClearFilters={clearFilters}
       >
-        <input
+        <SearchInput
           value={search}
-          onChange={e => { setSearch(e.target.value); setPage(0) }}
+          onChange={v => { setSearch(v); setPage(0) }}
           placeholder="Search ID or name..."
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
         />
         <select
           value={tactic}
           onChange={e => { setTactic(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All tactics</option>
           {TACTICS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -234,7 +234,7 @@ export function Ttps() {
         <select
           value={domain}
           onChange={e => { setDomain(e.target.value); setPage(0) }}
-          className="rounded-lg border border-[#2a2a3e] bg-bg-surface px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           {DOMAINS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>

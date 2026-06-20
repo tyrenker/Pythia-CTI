@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ExternalLink, Newspaper } from 'lucide-react'
-import { useFeedArticles, useFeedSources } from '@/api/intel-feed'
+import { useFeedArticles, useFeedSources, useTriggerFetch } from '@/api/intel-feed'
 import { formatDate, timeAgo } from '@/lib/utils'
 import type { FeedArticle } from '@/types/api'
 
@@ -13,7 +13,7 @@ function ArticleCard({ article }: { article: FeedArticle }) {
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-accent-bright hover:underline"
+            className="text-sm font-medium text-[#00ff88] hover:underline"
           >
             {article.title ?? article.url}
           </a>
@@ -42,25 +42,39 @@ export function RecentArticles() {
     source_id: sourceFilter || undefined,
     limit: 100,
   })
+  const trigger = useTriggerFetch()
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <Newspaper size={16} className="text-accent-bright" />
+          <Newspaper size={16} className="text-[#00ff88]" />
           <h1 className="text-lg font-semibold text-text-primary">Recent Blogs &amp; Articles</h1>
         </div>
         <select
           value={sourceFilter}
           onChange={e => setSourceFilter(e.target.value)}
-          className="ml-auto rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
         >
           <option value="">All sources</option>
           {(sources ?? []).map(s => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
+        <button
+          onClick={() => trigger.mutate(undefined)}
+          disabled={trigger.isPending}
+          className="ml-auto bg-[#00ff88] px-4 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#0a0a0f] cyber-chamfer-sm transition-all hover:shadow-[0_0_12px_rgba(0,255,136,0.4)] disabled:opacity-50"
+        >
+          {trigger.isPending ? 'PULLING…' : 'PULL_FEEDS_NOW'}
+        </button>
       </div>
+
+      {trigger.data && (
+        <div className="border border-[#00ff88]/40 bg-[#00ff88]/5 px-3 py-2 font-mono text-[10px] text-[#00ff88]">
+          {'> '} PULL_COMPLETE — {trigger.data.new_articles} new articles queued.
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12 text-xs text-text-muted">

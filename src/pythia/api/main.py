@@ -49,8 +49,8 @@ def create_app() -> FastAPI:
         title="Pythia",
         description="Oracle-grade threat intelligence, served as an API.",
         version=__version__,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
         openapi_url="/openapi.json",
         lifespan=lifespan,
     )
@@ -62,7 +62,7 @@ def create_app() -> FastAPI:
                 "name": "Pythia",
                 "version": __version__,
                 "environment": settings.env,
-                "docs": "/docs",
+                "docs": "/api/docs",
             }
         )
 

@@ -44,78 +44,99 @@ export function ApiKeyModal({ open, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-md rounded-xl border border-[#2a2a3e] bg-bg-surface p-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text-primary">API Key Settings</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary">
-            <X size={16} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
+      <div className="w-full max-w-md bg-[#0a0a0f] border border-[#2a2a3a] p-6 shadow-[0_0_40px_rgba(0,0,0,0.8)] relative">
+        {/* top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00ff88]/40 to-transparent" />
+
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[#00ff88]/50 text-xs select-none">{'// '}</span>
+            <h2 className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-[#e0e0e0]">
+              API_KEY_SETTINGS
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[#6b7280] hover:text-[#ff3366] transition-colors p-0.5 border border-transparent hover:border-[#ff3366]/40"
+          >
+            <X size={14} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Pythia server key */}
-        <div className="mb-4">
-          <label className="block mb-1 text-xs font-medium text-text-primary">
+        <div className="mb-5">
+          <label className="block mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[#b0b0c8]">
             Pythia API Key
           </label>
-          <p className="mb-1.5 font-mono text-xs text-text-muted">{maskedServer}</p>
-          <input
-            type="password"
-            value={serverDraft}
-            onChange={e => setServerDraft(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSave()}
-            placeholder="Value of PYTHIA_API_KEY in your .env"
-            className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-          />
-          <p className="mt-1 text-xs text-text-muted">
+          <p className="mb-2 font-mono text-[11px] text-[#9ca3af]">{maskedServer}</p>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-[#00ff88]/50 select-none">{'>'}</span>
+            <input
+              type="password"
+              value={serverDraft}
+              onChange={e => setServerDraft(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSave()}
+              placeholder="Value of PYTHIA_API_KEY in your .env"
+              className="w-full border border-[#2a2a3a] bg-[#12121a] pl-7 pr-3 py-2 font-mono text-xs text-[#e0e0e0] placeholder-[#6b7280]/50 focus:outline-none focus:border-[#00ff88] transition-colors"
+            />
+          </div>
+          <p className="mt-1.5 font-mono text-[10px] text-[#9ca3af]">
             Required to use write endpoints (ingest, poll feeds, watchlist).
           </p>
         </div>
 
-        <div className="mb-5 border-t border-[#2a2a3e] pt-4">
-          {/* Claude key — informational, backend reads from .env */}
-          <div className="mb-4">
-            <label className="block mb-1 text-xs font-medium text-text-primary">
+        <div className="mb-5 border-t border-[#2a2a3a] pt-5">
+          <div className="mb-5">
+            <label className="block mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[#b0b0c8]">
               Claude (Anthropic) API Key
             </label>
-            <p className="mb-1.5 font-mono text-xs text-text-muted">{maskedClaude}</p>
-            <input
-              type="password"
-              value={claudeDraft}
-              onChange={e => setClaudeDraft(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
-            />
-            <p className="mt-1 text-xs text-text-muted">
-              Used by the backend for AI ingestion. Set <code className="font-mono">ANTHROPIC_API_KEY</code> in <code className="font-mono">.env</code> — storing it here is optional.
+            <p className="mb-2 font-mono text-[11px] text-[#9ca3af]">{maskedClaude}</p>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-[#00ff88]/50 select-none">{'>'}</span>
+              <input
+                type="password"
+                value={claudeDraft}
+                onChange={e => setClaudeDraft(e.target.value)}
+                placeholder="sk-ant-..."
+                className="w-full border border-[#2a2a3a] bg-[#12121a] pl-7 pr-3 py-2 font-mono text-xs text-[#e0e0e0] placeholder-[#6b7280]/50 focus:outline-none focus:border-[#00ff88] transition-colors"
+              />
+            </div>
+            <p className="mt-1.5 font-mono text-[10px] text-[#9ca3af]">
+              Used by the backend for AI ingestion. Set{' '}
+              <code className="text-[#00ff88]">ANTHROPIC_API_KEY</code> in{' '}
+              <code className="text-[#00ff88]">.env</code> — storing it here is optional.
             </p>
           </div>
 
-          <p className="text-xs font-semibold text-text-muted mb-2">Other feed keys (server-side only)</p>
-          <p className="text-xs text-text-muted">
-            Set <code className="font-mono">MALPEDIA_API_KEY</code> and{' '}
-            <code className="font-mono">PHISHTANK_API_KEY</code> in your <code className="font-mono">.env</code> file.
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#b0b0c8] mb-1.5">
+            Other feed keys (server-side only)
+          </p>
+          <p className="font-mono text-[10px] text-[#9ca3af]">
+            Set <code className="text-[#00ff88]">MALPEDIA_API_KEY</code> and{' '}
+            <code className="text-[#00ff88]">PHISHTANK_API_KEY</code> in your{' '}
+            <code className="text-[#00ff88]">.env</code> file.
           </p>
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={handleSave}
-            className="flex-1 rounded-lg bg-accent py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+            className="flex-1 bg-[#00ff88] py-2 font-mono text-xs font-bold uppercase tracking-wider text-[#0a0a0f] cyber-chamfer-sm transition-all hover:shadow-[0_0_15px_rgba(0,255,136,0.4)] active:scale-[0.98]"
           >
-            Save
+            SAVE
           </button>
           <button
             onClick={handleClear}
-            className="rounded-lg border border-[#2a2a3e] px-4 py-2 text-xs text-text-muted hover:text-text-primary transition-colors"
+            className="border border-[#ff3366]/50 px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-[#ff3366] transition-all hover:bg-[#ff3366]/10 hover:shadow-[0_0_8px_rgba(255,51,102,0.2)]"
           >
-            Clear
+            CLEAR
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg border border-[#2a2a3e] px-4 py-2 text-xs text-text-muted hover:text-text-primary transition-colors"
+            className="border border-[#2a2a3a] px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-[#6b7280] transition-all hover:border-[#6b7280] hover:text-[#e0e0e0]"
           >
-            Cancel
+            ESC
           </button>
         </div>
       </div>

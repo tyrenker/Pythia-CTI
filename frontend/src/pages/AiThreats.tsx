@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, Brain, ChevronDown, ChevronRight, Shield } from 'lucide-react'
 import { useOWASPItems, useAIIncidents, useAtlasTechniques, useAIThreatsOverview } from '@/api/ai-threats'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { SearchInput } from '@/components/shared/SearchInput'
 
 function owaspSeverityBadge(rank: number) {
   if (rank <= 5) {
@@ -47,7 +48,7 @@ export function AiThreats() {
       label: 'MITRE ATLAS Techniques',
       value: overview?.atlas_count ?? (atlas?.length ?? '—'),
       icon: Brain,
-      color: 'text-cyan-400',
+      color: 'text-[#00ff88]/80',
     },
     {
       label: 'OWASP LLM Categories',
@@ -101,7 +102,7 @@ export function AiThreats() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-accent-bright">{item.id}</span>
+                      <span className="font-mono text-xs text-[#00ff88]">{item.id}</span>
                       {owaspSeverityBadge(item.rank)}
                     </div>
                     {expandedOwasps.includes(item.id)
@@ -111,7 +112,7 @@ export function AiThreats() {
                   <p className="mt-1.5 text-sm font-medium text-text-primary">{item.name}</p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {item.atlas_ids.map(a => (
-                      <span key={a} className="rounded bg-cyan-900 px-1.5 py-0.5 text-xs font-mono text-cyan-300">{a}</span>
+                      <span key={a} className="rounded bg-[#00ff88]/10 px-1.5 py-0.5 text-xs font-mono text-[#00ff88]">{a}</span>
                     ))}
                     {item.cwe_ids.map(c => (
                       <span key={c} className="rounded bg-zinc-800 px-1.5 py-0.5 text-xs font-mono text-zinc-300">{c}</span>
@@ -154,17 +155,16 @@ export function AiThreats() {
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <h2 className="text-sm font-semibold text-text-primary">Real-world AI Incidents</h2>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <input
+            <SearchInput
               value={incidentSearch}
-              onChange={e => setIncidentSearch(e.target.value)}
+              onChange={v => setIncidentSearch(v)}
               placeholder="Search incidents..."
-              className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
             />
             {incidentYears.length > 0 && (
               <select
                 value={incidentYear}
                 onChange={e => setIncidentYear(e.target.value)}
-                className="rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-1.5 text-xs text-text-primary focus:outline-none"
+                className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors"
               >
                 <option value="">All years</option>
                 {incidentYears.map(y => <option key={y} value={y}>{y}</option>)}
@@ -187,7 +187,7 @@ export function AiThreats() {
             <div className="relative ml-4 space-y-6 border-l border-[#2a2a3e] pl-6">
               {filteredIncidents.map(incident => (
                 <div key={incident.id} className="relative">
-                  <div className="absolute -left-8 top-1 h-3 w-3 rounded-full border-2 border-accent-bright bg-bg-base" />
+                  <div className="absolute -left-8 top-1 h-3 w-3 rounded-full border-2 border-[#00ff88] bg-bg-base" />
                   <div className="rounded-xl border border-[#2a2a3e] bg-bg-surface p-4">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       {incident.date && (
@@ -209,7 +209,7 @@ export function AiThreats() {
                         <button
                           key={id}
                           onClick={() => setFilterTag(id === filterTag ? null : id)}
-                          className="rounded bg-cyan-900 px-1.5 py-0.5 text-xs font-mono text-cyan-300 hover:opacity-80"
+                          className="rounded bg-[#00ff88]/10 px-1.5 py-0.5 text-xs font-mono text-[#00ff88] hover:opacity-80"
                         >
                           {id}
                         </button>
@@ -223,7 +223,7 @@ export function AiThreats() {
                         href={incident.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-block text-xs text-accent-bright hover:underline"
+                        className="mt-2 inline-block text-xs text-[#00ff88] hover:underline"
                       >
                         Source ↗
                       </a>
@@ -246,7 +246,7 @@ export function AiThreats() {
         >
           {showAtlas ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           ATLAS Techniques
-          <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-cyan-900/60 px-1.5 text-xs font-bold text-cyan-300">
+          <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#00ff88]/15 px-1.5 text-xs font-bold text-[#00ff88]">
             {atlas?.length ?? 0}
           </span>
         </button>
@@ -263,7 +263,7 @@ export function AiThreats() {
               <tbody>
                 {atlas.map(t => (
                   <tr key={t.technique_id} className="border-b border-[#2a2a3e] hover:bg-bg-elevated transition-colors">
-                    <td className="px-3 py-2 font-mono text-cyan-300">{t.technique_id}</td>
+                    <td className="px-3 py-2 font-mono text-[#00ff88]">{t.technique_id}</td>
                     <td className="px-3 py-2 text-text-primary">{t.name}</td>
                     <td className="px-3 py-2 text-text-muted">{t.tactics.join(', ')}</td>
                     <td className="px-3 py-2 text-text-muted">{t.subtechniques.length}</td>

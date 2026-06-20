@@ -96,7 +96,7 @@ export function RuleDetail() {
                 )}
                 {rule.source_url && (
                   <a href={rule.source_url} target="_blank" rel="noreferrer"
-                    className="text-xs text-accent-bright hover:underline">
+                    className="text-xs text-[#00ff88] hover:underline">
                     Source ↗
                   </a>
                 )}
@@ -198,7 +198,7 @@ export function RuleDetail() {
               <input
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
             </div>
 
@@ -235,7 +235,7 @@ export function RuleDetail() {
                 value={editTechniqueIds}
                 onChange={e => setEditTechniqueIds(e.target.value)}
                 placeholder="T1059.001, T1027"
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
             </div>
 
@@ -245,7 +245,7 @@ export function RuleDetail() {
                 value={editSourceUrl}
                 onChange={e => setEditSourceUrl(e.target.value)}
                 placeholder="https://github.com/..."
-                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-bright"
+                className="w-full rounded-lg border border-[#2a2a3e] bg-bg-elevated px-3 py-2 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-[#00ff88]"
               />
             </div>
 
@@ -263,7 +263,7 @@ export function RuleDetail() {
               onChange={e => setEditContent(e.target.value)}
               rows={24}
               spellCheck={false}
-              className="w-full rounded-lg border border-[#2a2a3e] bg-[#0d0d14] px-3 py-2 font-mono text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-bright resize-y leading-relaxed"
+              className="w-full rounded-lg border border-[#2a2a3e] bg-[#0d0d14] px-3 py-2 font-mono text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-[#00ff88] resize-y leading-relaxed"
             />
           </div>
         </div>

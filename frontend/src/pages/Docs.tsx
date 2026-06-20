@@ -488,7 +488,7 @@ export function Docs() {
             onClick={() => setActiveSection('getting-started')}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
               activeSection === 'getting-started'
-                ? 'bg-accent/10 text-accent-bright'
+                ? 'bg-accent/10 text-[#00ff88]'
                 : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
             }`}
           >
@@ -499,7 +499,7 @@ export function Docs() {
             onClick={() => setActiveSection('docker-cli')}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
               activeSection === 'docker-cli'
-                ? 'bg-accent/10 text-accent-bright'
+                ? 'bg-accent/10 text-[#00ff88]'
                 : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
             }`}
           >
@@ -514,7 +514,7 @@ export function Docs() {
             onClick={() => setActiveSection('workflows')}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
               activeSection === 'workflows'
-                ? 'bg-accent/10 text-accent-bright'
+                ? 'bg-accent/10 text-[#00ff88]'
                 : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
             }`}
           >
@@ -531,7 +531,7 @@ export function Docs() {
               onClick={() => setActiveSection(`api-${category.toLowerCase()}`)}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
                 activeSection === `api-${category.toLowerCase()}`
-                  ? 'bg-accent/10 text-accent-bright'
+                  ? 'bg-accent/10 text-[#00ff88]'
                   : 'text-text-muted hover:bg-bg-elevated hover:text-text-primary'
               }`}
             >
@@ -549,7 +549,7 @@ export function Docs() {
         {activeSection === 'getting-started' && (
           <section className="space-y-6">
             <div>
-              <span className="text-xs font-semibold text-accent-bright uppercase tracking-wider font-mono">⬡ Platform Documentation</span>
+              <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Platform Documentation</span>
               <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">Overview & Oracle Design</h1>
               <p className="mt-2 text-sm text-text-muted leading-relaxed">
                 Named after the high priestess of Delphi who delivered Apollo's prophecies, <strong>Pythia</strong> is an oracle-grade cyber threat intelligence (CTI) platform. It ingests unorganized, public security blog posts, parses and models them using Claude AI, and serves them natively as structured STIX 2.1 profiles, Sigma rules, and executive-ready A4 PDF intelligence briefs.
@@ -558,7 +558,7 @@ export function Docs() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-lg border border-border bg-bg-base p-4">
-                <div className="flex items-center gap-2 text-accent-bright">
+                <div className="flex items-center gap-2 text-[#00ff88]">
                   <Shield size={16} />
                   <h3 className="text-sm font-semibold font-mono">STIX 2.1 Mappings</h3>
                 </div>
@@ -568,7 +568,7 @@ export function Docs() {
               </div>
 
               <div className="rounded-lg border border-border bg-bg-base p-4">
-                <div className="flex items-center gap-2 text-accent-bright">
+                <div className="flex items-center gap-2 text-[#00ff88]">
                   <Zap size={16} />
                   <h3 className="text-sm font-semibold font-mono">Claude AI Parser</h3>
                 </div>
@@ -578,7 +578,7 @@ export function Docs() {
               </div>
 
               <div className="rounded-lg border border-border bg-bg-base p-4">
-                <div className="flex items-center gap-2 text-accent-bright">
+                <div className="flex items-center gap-2 text-[#00ff88]">
                   <Server size={16} />
                   <h3 className="text-sm font-semibold font-mono">PDF Briefing engine</h3>
                 </div>
@@ -641,7 +641,7 @@ export function Docs() {
         {activeSection === 'docker-cli' && (
           <section className="space-y-6">
             <div>
-              <span className="text-xs font-semibold text-accent-bright uppercase tracking-wider font-mono">⬡ Installation & Shells</span>
+              <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Installation & Shells</span>
               <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">Docker & CLI Setup</h1>
               <p className="mt-2 text-sm text-text-muted leading-relaxed">
                 Because generating PDF documents via CSS uses local rendering engines, it requires specific C-libraries. The **Docker Container** packages all required libraries natively, making it the bulletproof execution path.
@@ -649,12 +649,12 @@ export function Docs() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-base font-bold font-mono text-accent-bright">1. Shell CLI Executions</h2>
+              <h2 className="text-base font-bold font-mono text-[#00ff88]">1. Shell CLI Executions</h2>
               <p className="text-sm text-text-muted">
                 You can run any Pythia command by passing it directly to the running container using `docker exec`:
               </p>
               <div className="relative group">
-                <pre className="overflow-x-auto rounded-lg bg-bg-base border border-border p-4 text-xs font-mono text-accent-bright">
+                <pre className="overflow-x-auto rounded-lg bg-bg-base border border-border p-4 text-xs font-mono text-[#00ff88]">
                   {`# List ingested threat records in your database
 docker exec -it pythia pythia list threats
 
@@ -674,7 +674,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-base font-bold font-mono text-accent-bright font-mono">2. Setup the Local Command Alias 🚀</h2>
+              <h2 className="text-base font-bold font-mono text-[#00ff88] font-mono">2. Setup the Local Command Alias 🚀</h2>
               <p className="text-sm text-text-muted leading-relaxed">
                 To run commands cleanly on your Mac as if it were a native application (e.g. typing just `pythia list threats`), you can set up a shell shortcut alias:
               </p>
@@ -718,7 +718,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
         {activeSection === 'workflows' && (
           <section className="space-y-6">
             <div>
-              <span className="text-xs font-semibold text-accent-bright uppercase tracking-wider font-mono">⬡ Threat Operations</span>
+              <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Threat Operations</span>
               <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">Common CTI Workflows</h1>
               <p className="mt-2 text-sm text-text-muted leading-relaxed">
                 Pythia is optimized to support three distinct operations: translating technical telemetry for leadership, conducting rapid incident forensics, and cataloging target profiles.
@@ -729,7 +729,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
               {/* Workflow A */}
               <div className="pt-4 first:pt-0 space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="rounded bg-accent/20 px-2 py-1 font-mono text-xs font-bold text-accent-bright">Workflow A</span>
+                  <span className="rounded bg-accent/20 px-2 py-1 font-mono text-xs font-bold text-[#00ff88]">Workflow A</span>
                   <h3 className="text-base font-bold font-mono text-text-primary">The C-Suite Executive Briefing</h3>
                 </div>
                 <p className="text-xs text-text-muted leading-relaxed">
@@ -737,9 +737,9 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                 </p>
                 <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
                   <div className="text-text-muted"># 1. Parse and extract threat structured CTI</div>
-                  <div className="text-accent-bright">pythia ingest "https://www.huntress.com/blog/the-gentlemen-ransomware-defense-evasion-ttps"</div>
+                  <div className="text-[#00ff88]">pythia ingest "https://www.huntress.com/blog/the-gentlemen-ransomware-defense-evasion-ttps"</div>
                   <div className="text-text-muted"># 2. Compile executive PDF report matching board concerns</div>
-                  <div className="text-accent-bright">pythia report "c881d693" --template executive --output data/exec_brief.pdf</div>
+                  <div className="text-[#00ff88]">pythia report "c881d693" --template executive --output data/exec_brief.pdf</div>
                 </div>
                 <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
                   <li>Aggregates raw details into a simplified human-readable threat context narrative.</li>
@@ -751,7 +751,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
               {/* Workflow B */}
               <div className="pt-6 space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="rounded bg-cyan-900/20 px-2 py-1 font-mono text-xs font-bold text-cyan-400">Workflow B</span>
+                  <span className="rounded bg-[#00ff88]/8 px-2 py-1 font-mono text-xs font-bold text-[#00ff88]/80">Workflow B</span>
                   <h3 className="text-base font-bold font-mono text-text-primary">Threat Hunting & Forensics (SecOps)</h3>
                 </div>
                 <p className="text-xs text-text-muted leading-relaxed">
@@ -759,9 +759,9 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                 </p>
                 <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
                   <div className="text-text-muted"># 1. Parse the technical exploit writeup</div>
-                  <div className="text-accent-bright">pythia ingest "https://www.huntress.com/blog/slashandgrab-the-connectwise-screenconnect-vulnerability-explained-2"</div>
+                  <div className="text-[#00ff88]">pythia ingest "https://www.huntress.com/blog/slashandgrab-the-connectwise-screenconnect-vulnerability-explained-2"</div>
                   <div className="text-text-muted"># 2. Render a comprehensive technical forensics report</div>
-                  <div className="text-accent-bright">pythia report "4f7cbb25" --template tactical --output data/tactical_forensics.pdf</div>
+                  <div className="text-[#00ff88]">pythia report "4f7cbb25" --template tactical --output data/tactical_forensics.pdf</div>
                 </div>
                 <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
                   <li>Compiles detailed tables of **Indicators of Compromise** (hashes, IPs, URLs) sorted by the **Pyramid of Pain**.</li>
@@ -781,9 +781,9 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                 </p>
                 <div className="rounded bg-bg-base border border-border p-3 text-xs space-y-2 font-mono">
                   <div className="text-text-muted"># 1. Check pre-seeded profile from the preloaded MISP database</div>
-                  <div className="text-accent-bright">pythia list actors "APT28"</div>
+                  <div className="text-[#00ff88]">pythia list actors "APT28"</div>
                   <div className="text-text-muted"># 2. Fetch standard Diamond Model parameters from the API</div>
-                  <div className="text-accent-bright">curl "http://localhost:8000/v1/actors/APT28/diamond"</div>
+                  <div className="text-[#00ff88]">curl "http://localhost:8000/v1/actors/APT28/diamond"</div>
                 </div>
                 <ul className="text-xs text-text-muted list-disc pl-5 space-y-1">
                   <li>Reviews pre-seeded nation-state sponsor profiles, aliases, and targeted countries.</li>
@@ -799,7 +799,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
         {activeSection.startsWith('api-') && (
           <section className="space-y-6">
             <div>
-              <span className="text-xs font-semibold text-accent-bright uppercase tracking-wider font-mono">⬡ Interactive API Reference</span>
+              <span className="text-xs font-semibold text-[#00ff88] uppercase tracking-wider font-mono">⬡ Interactive API Reference</span>
               <h1 className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">
                 {activeSection.split('-')[1].toUpperCase()} API Endpoint Specifications
               </h1>
@@ -821,7 +821,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                       <span className={`rounded px-2.5 py-1 text-xs font-extrabold font-mono ${
                         endpoint.method === 'POST' 
                           ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                          : 'bg-accent-bright/10 text-accent-bright border border-accent-bright/20'
+                          : 'bg-[#00ff88]/10 text-[#00ff88] border border-[#00ff88]/20'
                       }`}>
                         {endpoint.method}
                       </span>
@@ -856,12 +856,12 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                                       <td className="p-2.5 font-bold text-text-primary">
                                         {param.name} {param.required && <span className="text-red-500">*</span>}
                                       </td>
-                                      <td className="p-2.5 font-mono text-accent-bright">{param.type}</td>
+                                      <td className="p-2.5 font-mono text-[#00ff88]">{param.type}</td>
                                       <td className="p-2.5 font-mono">{param.default || '—'}</td>
                                       <td className="p-2.5">
                                         {param.description}
                                         {param.enum && (
-                                          <div className="mt-1 text-[10px] text-accent-bright font-mono">
+                                          <div className="mt-1 text-[10px] text-[#00ff88] font-mono">
                                             Enum: {param.enum.join(' | ')}
                                           </div>
                                         )}
@@ -898,7 +898,7 @@ docker exec -it pythia pythia report "c881d693" --template executive --output da
                                 {copiedId === endpoint.path + '-curl' ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto h-64 rounded-lg bg-bg-elevated border border-border p-4 text-xs font-mono text-accent-bright leading-relaxed">
+                            <pre className="overflow-x-auto h-64 rounded-lg bg-bg-elevated border border-border p-4 text-xs font-mono text-[#00ff88] leading-relaxed">
                               {endpoint.curlExample}
                             </pre>
                           </div>

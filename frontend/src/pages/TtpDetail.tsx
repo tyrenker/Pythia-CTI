@@ -34,7 +34,7 @@ export function TtpDetail() {
       <div className="mb-6 rounded-xl border border-[#2a2a3e] bg-bg-surface p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="mb-1 font-mono text-sm font-medium text-accent-bright">{ttp.technique_id}</p>
+            <p className="mb-1 font-mono text-sm font-medium text-[#00ff88]">{ttp.technique_id}</p>
             <h1 className="text-lg font-semibold text-text-primary">{ttp.name}</h1>
             <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-muted">
               <span>Tactics: {ttp.tactics.join(', ')}</span>
@@ -64,7 +64,7 @@ export function TtpDetail() {
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-xs font-medium transition-colors ${
               tab === t.key
-                ? 'border-b-2 border-accent-bright text-text-primary -mb-px'
+                ? 'border-b-2 border-[#00ff88] text-text-primary -mb-px'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
@@ -135,7 +135,7 @@ export function TtpDetail() {
                       <td className="px-3 py-2">
                         <Link
                           to={`/actors/${actor.id}`}
-                          className="font-medium text-accent-bright hover:underline"
+                          className="font-medium text-[#00ff88] hover:underline"
                         >
                           {actor.name}
                         </Link>
@@ -150,7 +150,7 @@ export function TtpDetail() {
                         {actor.sophistication != null ? (
                           <span className="flex gap-0.5">
                             {[1, 2, 3, 4, 5].map(n => (
-                              <span key={n} className={n <= actor.sophistication! ? 'text-accent-bright' : 'text-[#2a2a3e]'}>●</span>
+                              <span key={n} className={n <= actor.sophistication! ? 'text-[#00ff88]' : 'text-[#2a2a3e]'}>●</span>
                             ))}
                           </span>
                         ) : '—'}
