@@ -1,13 +1,22 @@
 services:
-  tor:
-    image: alpine:latest
-    container_name: pythia-tor
-    entrypoint: ["sh", "-c", "apk add --no-cache tor && exec tor -f /etc/tor/torrc"]
+  postgres:
+    image: postgres:15-alpine
+    container_name: pythia-postgres
+    environment:
+      POSTGRES_USER: pythia
+      POSTGRES_PASSWORD: pythia_password
+      POSTGRES_DB: pythiadb
     volumes:
-      - ./docker/tor/torrc:/etc/tor/torrc:ro
+      - pythia_pgdata:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:9050:9050"
-      - "127.0.0.1:9051:9051"
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: pythia-redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
   pythia:
@@ -15,21 +24,37 @@ services:
     image: pythia:dev
     container_name: pythia
     depends_on:
-      - tor
+      - postgres
+      - redis
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
-      # Override DB path so it lands inside the mounted ./db/ directory.
-      # The .env default (./pythia.db) is for local non-Docker dev.
-      PYTHIA_DATABASE_URL: "sqlite:////app/db/pythia.db"
-      PYTHIA_DB_FILE: "/app/db/pythia.db"
-      PYTHIA_TOR_HOST: "tor"
-      # GeoIP databases live in the mounted ./data/geoip/ volume
-      MAXMIND_DB_PATH: "/app/data/geoip/GeoLite2-City.mmdb"
-      MAXMIND_ASN_DB_PATH: "/app/data/geoip/GeoLite2-ASN.mmdb"
+      PYTHIA_DATABASE_URL: "postgresql://pythia:pythia_password@postgres:5432/pythiadb"
+      PYTHIA_CELERY_BROKER_URL: "redis://redis:6379/0"
+      PYTHIA_CELERY_RESULT_BACKEND: "redis://redis:6379/0"
     volumes:
       - ./data:/app/data      # sigma rules, yara rules, seed data
-      - ./db:/app/db          # persistent user data — never deleted on restart
     restart: unless-stopped
+
+  celery_worker:
+    build: .
+    image: pythia:dev
+    container_name: pythia-celery
+    command: celery -A pythia.core.celery_app.celery_app worker --loglevel=info
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+    environment:
+      PYTHIA_DATABASE_URL: "postgresql://pythia:pythia_password@postgres:5432/pythiadb"
+      PYTHIA_CELERY_BROKER_URL: "redis://redis:6379/0"
+      PYTHIA_CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pythia_pgdata:

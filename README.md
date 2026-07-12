@@ -14,7 +14,7 @@
 
 Named after the high priestess of Delphi who delivered Apollo's prophecies, **Pythia** ingests raw threat intelligence, normalizes it against industry frameworks, and delivers it through a clean REST API — including executive-ready PDF briefs a CFO can actually read.
 
-It ships **fully loaded from the first clone**: over 1,180 threat actor profiles, 759 MITRE ATT&CK techniques, 1,600+ known-exploited CVEs, and 16 curated Sigma detection rules (plus 14 Yara) — no scraping required, no account sign-ups, no SaaS subscriptions.
+It ships **fully loaded from the first clone**: over 1,180 threat actor profiles, 759 MITRE ATT&CK techniques, 1,600+ known-exploited CVEs, and 16 curated Sigma detection rules (plus 14 Yara) — no scraping required, no account sign-ups, no SaaS subscriptions. The architecture is enterprise-grade, powered by PostgreSQL, Redis, and Celery for high-throughput intelligence ingestion.
 
 It also operates as a **live collection platform**: deploy a Cowrie SSH honeypot alongside Pythia and real attacker events flow in automatically — enriched with GeoIP, ASN, AbuseIPDB, and GreyNoise data, clustered into named campaigns, and converted into Sigma rules that deploy directly to your SIEM (Wazuh, Splunk, or Elastic). When a rule fires, the alert lands back in Pythia's Operations queue, correlated to the originating campaign and ready to triage.
 
@@ -47,6 +47,33 @@ Blog post / vendor report / OSINT / Honeypot events
     │  Honeypot events · Campaigns · SIEM alerts          │
     └─────┬───────────────────────────────────────────────┘
           │
+<<<<<<< HEAD
+          ▼ stored in PostgreSQL
+    ┌─────────────────────────────────────────────┐
+    │              Pythia Database                │
+    │  1,184 actors  ·  759 techniques  ·  1,600+ CVEs  │
+    │  Kill Chain mapping  ·  Diamond Model views      │
+    └─────┬───────────────────────────────────────┘
+          │
+    ┌─────┴────────────────────────────┐
+    │         REST API  /v1/           │
+    ├──────────────────────────────────┤
+    │  /actors     threat actor profiles + TTPs   │
+    │  /ttps       ATT&CK + ATLAS techniques      │
+    │  /iocs       indicators of compromise       │
+    │  /rules      Sigma detection rules          │
+    │  /hunts      Threat hunt workbench & AI     │
+    │  /threats    ingested intel reports         │
+    │  /watchlist  SIEM & Webhook Alerting        │
+    │  /reports    PDF generation                 │
+    │  /parse      Claude extraction endpoint     │
+    └─────┬────────────────────────────┘
+          │
+    ┌─────┴──────────────────┐
+    │  Executive PDF Brief   │  Kill chain grid · financial exposure
+    │  Tactical PDF Report   │  Full TTP table · IoC list · Admiralty
+    └────────────────────────┘
+=======
     ┌─────┴────────────────────────────────┐
     │            REST API  /v1/            │
     ├──────────────────────────────────────┤
@@ -70,6 +97,7 @@ Blog post / vendor report / OSINT / Honeypot events
     │  Tactical PDF Report                   │  Full TTP table · IoC list · Admiralty
     │  Honeypot Campaign Report              │  Attack timeline · credential patterns
     └────────────────────────────────────────┘
+>>>>>>> origin/main
 ```
 
 ---
@@ -181,31 +209,6 @@ pythia init-db
 pythia sync          # seed from public sources (~60s)
 pythia serve --reload
 ```
-
----
-
-## Loading Synthetic Data (For UI Demos & Bug Testing)
-
-If you are developing the UI frontend or running local demonstrations, you can populate the database with a comprehensive, realistic, and fully interconnected set of synthetic cyber threat intelligence (CTI) records.
-
-This synthetic dataset populates **every single database table** with highly visual content, ensuring that all frontend stat cards, Diamond models, actor Kill Chain grids, recent feeds, and analytics pages are non-empty and visually rich.
-
-### How to Run
-
-Activate your virtual environment and run the script from the root directory:
-
-```bash
-# 1. Populate the database (safely skips existing synthetic data)
-PYTHONPATH=src python3 scripts/load_synthetic_data.py
-
-# 2. Wipe and reload the synthetic data from scratch (idempotent reset)
-PYTHONPATH=src python3 scripts/load_synthetic_data.py --reset
-
-# 3. Dry-run (lists what would be inserted without writing)
-PYTHONPATH=src python3 scripts/load_synthetic_data.py --dry-run
-```
-
-The script operates in under **1 second** on local SQLite databases and uses deterministic UUID mappings so repeat runs are safely ignored.
 
 ---
 
@@ -441,6 +444,15 @@ curl -X PATCH http://localhost:8000/v1/siem/alerts/{id}/triage \
 
   See [docs/honeypot-siem-setup.md](docs/honeypot-siem-setup.md) for full Wazuh setup including the webhook integration script.
 
+### Workflow E: SIEM Integration & Webhook Alerting 🚨
+* **Goal:** Automatically push high-fidelity intelligence to your existing security stack.
+* **The Process:** Configure a Watchlist subscription in Pythia, pointing it to your Splunk HTTP Event Collector (HEC) or Elastic Ingest Node.
+* **What you get:** The moment Pythia ingests an article mentioning a tracked threat actor or MITRE technique, it autonomously fires a normalized JSON payload to your SIEM for immediate correlation and alerting.
+
+### Workflow F: Landscape Visualization 🌐
+* **Goal:** Understand complex relationships at a glance.
+* **The Process:** Navigate to the **Threat Graph** to visually explore node-based relationships between Threat Actors, Malware, Sectors, and Campaigns. Or, check the **MITRE ATT&CK Heatmap** to identify top-targeted techniques across all ingested intel, exposing defensive coverage gaps.
+
 ---
 
 ## CLI
@@ -480,7 +492,8 @@ src/pythia/
 │
 ├── core/
 │   ├── config.py      # pydantic-settings, PYTHIA_* env vars
-│   ├── db.py          # SQLAlchemy engine + session (WAL mode, FK enforcement)
+│   ├── db.py          # SQLAlchemy engine + session (PostgreSQL)
+│   ├── celery_app.py  # Redis-backed Celery async task queue
 │   └── seed.py        # MISP Galaxy, ATT&CK STIX, CISA KEV, ATLAS, Sigma pipeline
 │
 ├── models/
@@ -534,7 +547,7 @@ data/
 └── seed/              # upstream license attribution
 
 db/
-└── pythia.db          # SQLite — bind-mounted in Docker, gitignored
+└── pgdata/            # PostgreSQL volume — bind-mounted in Docker
 ```
 
 ---

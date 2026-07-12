@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch } from './client'
-import type { ThreatSummary, ThreatDetail } from '@/types/api'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { apiFetch, apiPost } from './client'
+import type { ThreatSummary, ThreatDetail, SuggestedRulesResponse } from '@/types/api'
 
 interface ListThreatsParams {
   tlp?: string
@@ -33,3 +33,24 @@ export function useThreat(id: string) {
     enabled: !!id,
   })
 }
+
+export function useSuggestRules() {
+  return useMutation({
+    mutationFn: (threatId: string) =>
+      apiPost<SuggestedRulesResponse>(`/threats/${threatId}/suggest-rules`, {}),
+  })
+}
+
+export function useSaveRule() {
+  return useMutation({
+    mutationFn: (body: {
+      rule_type: string
+      title: string
+      content: string
+      severity?: string
+      technique_ids?: string[]
+      source_url?: string
+    }) => apiPost<{ id: string }>('/rules', body),
+  })
+}
+

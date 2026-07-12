@@ -42,6 +42,7 @@ class RuleSummary(BaseModel):
     severity: str | None = None
     status: str | None = None
     source_url: str | None = None
+    created_at: str | None = None
 
 
 class RuleDetail(RuleSummary):
@@ -66,7 +67,10 @@ def _apply_rule_filters(
     if technique_id:
         q2 = q2.filter(DetectionRule.technique_ids.contains(technique_id.upper()))
     if source:
-        q2 = q2.filter(DetectionRule.source == source)
+        if source == "pythia-ai":
+            q2 = q2.filter(DetectionRule.source.is_(None), DetectionRule.source_url.is_(None))
+        else:
+            q2 = q2.filter(DetectionRule.source == source)
     return q2
 
 
@@ -90,12 +94,22 @@ async def list_rules(
     ),
     severity: str | None = Query(default=None, description="Filter by severity"),
     source: str | None = Query(default=None, description="Filter by source slug"),
+    sort_by: str = Query(default="title", description="Sort field: title | created_at"),
+    sort_dir: str = Query(default="asc", description="Sort direction: asc | desc"),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ) -> list[RuleSummary]:
     q = _apply_rule_filters(session.query(DetectionRule), rule_type, technique_id, severity, source)
-    rules = q.order_by(DetectionRule.title).offset(offset).limit(limit).all()
+    
+    # Sorting
+    if sort_by == "created_at":
+        order_col = DetectionRule.created_at.desc() if sort_dir == "desc" else DetectionRule.created_at.asc()
+    else:
+        order_col = DetectionRule.title.desc() if sort_dir == "desc" else DetectionRule.title.asc()
+        
+    rules = q.order_by(order_col).offset(offset).limit(limit).all()
+    
     return [
         RuleSummary(
             id=r.id,
@@ -105,6 +119,7 @@ async def list_rules(
             severity=r.severity,
             status=r.status,
             source_url=r.source_url,
+            created_at=r.created_at.isoformat() if r.created_at else None,
         )
         for r in rules
     ]

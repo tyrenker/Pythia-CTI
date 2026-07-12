@@ -155,6 +155,7 @@ export interface DetectionRule {
   status: string | null
   source_url: string | null
   technique_ids: string[]
+  created_at?: string
   // Only present on the detail endpoint:
   content?: string
   actor_ids?: string[]
@@ -401,4 +402,31 @@ export interface HypothesisRefinement {
   alternative_hypotheses: { hypothesis: string; likelihood: string; distinguishing_test: string }[]
   recommended_pivots: { action: string; rationale: string; priority: string }[]
 }
+
+// ── Suggested Rules ──────────────────────────────────────────────────────────
+
+export interface SuggestedRule {
+  title: string
+  content: string
+  description: string
+  severity: string
+  linked_ttps: string[]
+  pyramid_tier: string
+}
+
+export interface SuggestedQuery {
+  title: string
+  content: string
+  description: string
+}
+
+export interface SuggestedRulesResponse {
+  sigma_rules: SuggestedRule[]
+  yara_rules: SuggestedRule[]
+  splunk_queries: SuggestedQuery[]
+  elastic_queries: SuggestedQuery[]
+  playbook: string
+  generation_notes: string
+}
+
 

@@ -19,51 +19,19 @@ _scheduler: Any = None  # BackgroundScheduler instance when running
 
 
 def _run_seed_fn(fn_name: str) -> None:
-    from pythia.core import seed as _seed_mod
-    from pythia.core.db import SessionLocal
-
-    fn = getattr(_seed_mod, fn_name)
-    with SessionLocal() as session:
-        fn(session, dry_run=False)
+    from pythia.core.tasks import run_seed_fn
+    run_seed_fn.delay(fn_name)
 
 
 def _run_feed_fn(fn_name: str) -> None:
-    from pythia.core.config import get_settings
-    from pythia.core.db import SessionLocal
-    from pythia.ingestion import feed_poller as _poller
+    from pythia.core.tasks import poll_all_feeds, process_article_queue
 
-    settings = get_settings()
-    fn = getattr(_poller, fn_name)
-    with SessionLocal() as session:
-        if fn_name == "process_article_queue":
-            fn(session, limit=settings.feed_max_articles_per_run)
-        else:
-            fn(session)
+    if fn_name == "process_article_queue":
+        process_article_queue.delay()
+    else:
+        poll_all_feeds.delay()
 
 
-def _run_dark_web_fn(fn_name: str) -> None:
-    import pythia.ingestion.dark_web_poller as _dw
-    from pythia.core.config import get_settings
-    from pythia.core.db import SessionLocal
-    from pythia.core.tor_proxy import TorProxyManager
-
-    settings = get_settings()
-    tor = TorProxyManager(
-        control_host=settings.tor_host,
-        control_port=settings.tor_control_port,
-        password=settings.tor_control_password,
-    )
-    if not tor.is_available():
-        if settings.tor_required:
-            raise RuntimeError("Tor not available — dark web scheduler skipped")
-        print("dark-web scheduler: Tor not available — skipping run")
-        return
-    fn = getattr(_dw, fn_name)
-    with SessionLocal() as session:
-        if fn_name == "process_dark_web_queue":
-            fn(session, limit=settings.dark_web_max_per_run)
-        else:
-            fn(session)
 
 
 def start_scheduler() -> None:
@@ -135,20 +103,6 @@ def start_scheduler() -> None:
         lambda: _run_feed_fn("process_article_queue"), "interval", hours=1, id="feed_ingest"
     )
 
-    # Dark web: poll source index pages every 4 hours (no Claude)
-    _scheduler.add_job(
-        lambda: _run_dark_web_fn("poll_all_dark_web_sources"),
-        "interval",
-        hours=4,
-        id="dark_web_poll",
-    )
-    # Dark web: run Claude on fetched posts every 2 hours (throttled to max_per_run)
-    _scheduler.add_job(
-        lambda: _run_dark_web_fn("process_dark_web_queue"),
-        "interval",
-        hours=2,
-        id="dark_web_ingest",
-    )
 
     # Honeypot: campaign detection every 15 minutes
     _scheduler.add_job(
