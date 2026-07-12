@@ -20,6 +20,7 @@ router = APIRouter()
 
 # ── Pydantic response schemas ────────────────────────────────────────────────
 
+
 class TTPSummary(BaseModel):
     technique_id: str
     name: str | None = None
@@ -134,11 +135,15 @@ def _ttp_summary(mapping: object, session: Session) -> TTPSummary:
 
 # ── Routes ───────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=list[ActorSummary])
 async def list_actors(
     name: str | None = Query(default=None, description="Filter by name substring"),
     country: str | None = Query(default=None, description="Filter by 2-letter country code"),
-    sponsor_type: str | None = Query(default=None, description="nation-state | financially-motivated | hacktivist | script-kiddie | unknown"),
+    sponsor_type: str | None = Query(
+        default=None,
+        description="nation-state | financially-motivated | hacktivist | script-kiddie | unknown",
+    ),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
@@ -172,7 +177,9 @@ async def get_actor(
 ) -> ActorDetail:
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
 
     ttps = [_ttp_summary(m, session) for m in actor.ttp_mappings]
     return ActorDetail(
@@ -193,7 +200,9 @@ async def get_actor_killchain(
 ) -> KillChainView:
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
 
     phases: dict[str, list[TTPSummary]] = {p: [] for p in KILL_CHAIN_PHASES}
     for mapping in actor.ttp_mappings:
@@ -225,12 +234,15 @@ async def get_actor_diamond(
 ) -> dict[str, object]:
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
 
     tool_techs = [
-        m.technique_id for m in actor.ttp_mappings
-        if (session.get(AttckTechnique, m.technique_id) and
-        "T1588" in m.technique_id) or "T1583" in m.technique_id  # Tool/Resource acquisition
+        m.technique_id
+        for m in actor.ttp_mappings
+        if (session.get(AttckTechnique, m.technique_id) and "T1588" in m.technique_id)
+        or "T1583" in m.technique_id  # Tool/Resource acquisition
     ]
 
     return {
@@ -263,7 +275,9 @@ async def get_actor_stix(
     """Export actor as a STIX 2.1 bundle (threat-actor + attack-patterns + relationships)."""
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
     bundle = stix_export_actor(actor)
     return JSONResponse(content=bundle, media_type="application/stix+json")
 
@@ -275,7 +289,9 @@ async def get_actor_diff(
 ) -> dict[str, object]:
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
     return {
         "actor_id": actor.id,
         "note": "TTP diff tracking requires timestamped ingestion — coming in a future sync.",
@@ -292,7 +308,9 @@ class EnrichResult(BaseModel):
     ttps_source: str | None
 
 
-@router.post("/{actor_id}/enrich", response_model=EnrichResult, dependencies=[Depends(require_api_key)])
+@router.post(
+    "/{actor_id}/enrich", response_model=EnrichResult, dependencies=[Depends(require_api_key)]
+)
 async def enrich_actor(
     actor_id: str,
     session: Session = Depends(get_session),
@@ -305,7 +323,9 @@ async def enrich_actor(
     """
     actor = _resolve_actor(actor_id, session)
     if not actor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Actor '{actor_id}' not found"
+        )
 
     soph_before = actor.sophistication
 
@@ -317,12 +337,14 @@ async def enrich_actor(
         existing = {m.technique_id for m in actor.ttp_mappings}
         for tid in tech_ids:
             if tid not in existing:
-                session.add(ActorTTPMapping(
-                    actor_id=actor.id,
-                    technique_id=tid,
-                    use_note="inferred by Claude from actor description",
-                    source="claude-inference",
-                ))
+                session.add(
+                    ActorTTPMapping(
+                        actor_id=actor.id,
+                        technique_id=tid,
+                        use_note="inferred by Claude from actor description",
+                        source="claude-inference",
+                    )
+                )
                 existing.add(tid)
                 ttps_added += 1
         if ttps_added:

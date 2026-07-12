@@ -87,3 +87,4 @@ memory/
 
 # MaxMind GeoIP databases (large binary files, download separately)
 data/geoip/
+data/geoip/*.mmdb

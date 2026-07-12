@@ -285,11 +285,15 @@ function QueueTab() {
     {
       key: 'status',
       header: 'Status',
-      render: (a: FeedArticle) => (
-        <span className={`px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${STATUS_STYLES[a.status] ?? ''}`}>
-          {a.status}
-        </span>
-      ),
+      render: (a: FeedArticle) => {
+        const isIngestingThis = ingest.isPending && ingest.variables === a.id
+        const displayStatus = isIngestingThis ? 'ingesting' : a.status
+        return (
+          <span className={`px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${STATUS_STYLES[displayStatus] ?? ''}`}>
+            {displayStatus}
+          </span>
+        )
+      },
     },
     {
       key: 'actions',
@@ -297,7 +301,10 @@ function QueueTab() {
       render: (a: FeedArticle) => {
         if (a.status === 'done' && a.report_id)
           return <span className="font-mono text-[9px] text-[#00ff88]">✓ INGESTED</span>
-        if (a.status === 'ingesting')
+        
+        const isIngestingThis = ingest.isPending && ingest.variables === a.id
+        
+        if (a.status === 'ingesting' || isIngestingThis)
           return <span className="font-mono text-[9px] text-[#00ff88] animate-pulse">PROCESSING…</span>
         if (a.status === 'queued' || a.status === 'failed') {
           return (

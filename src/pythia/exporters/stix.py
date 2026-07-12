@@ -75,7 +75,9 @@ def export_actor(actor: Any) -> dict[str, Any]:
     if actor.description:
         stix_actor["description"] = actor.description
     if actor.sponsor_type and actor.sponsor_type != "unknown":
-        stix_actor["threat_actor_types"] = [_SPONSOR_TO_STIX.get(actor.sponsor_type, actor.sponsor_type)]
+        stix_actor["threat_actor_types"] = [
+            _SPONSOR_TO_STIX.get(actor.sponsor_type, actor.sponsor_type)
+        ]
     if actor.motivations:
         stix_actor["primary_motivation"] = actor.motivations[0]
         if len(actor.motivations) > 1:
@@ -193,3 +195,91 @@ def _admiralty_to_stix_confidence(code: str) -> int:
     s = source_score.get(code[0].upper(), 50)
     i = info_score.get(code[1], 50)
     return (s + i) // 2
+
+
+def export_honeypot_iocs(
+    campaigns: list[Any],
+    min_abuseipdb_score: int = 80,
+) -> dict[str, Any]:
+    """Return a STIX 2.1 bundle of honeypot IOCs and campaign objects.
+
+    Emits indicator SDOs for high-confidence attacker IPs, attack-pattern SDOs
+    for observed TTPs, and campaign SDOs for each HoneypotCampaign.
+    """
+    objects: list[dict[str, Any]] = []
+
+    for campaign in campaigns:
+        campaign_stix: dict[str, Any] = {
+            "type": "campaign",
+            "spec_version": "2.1",
+            "id": f"campaign--{_uuid.uuid5(_uuid.NAMESPACE_URL, 'honeypot-' + campaign.id)}",
+            "created": _fmt_dt(campaign.created_at),
+            "modified": _fmt_dt(campaign.updated_at),
+            "name": campaign.name,
+            "description": (
+                f"Honeypot campaign detected by Pythia. "
+                f"{campaign.event_count} events from {len(campaign.attacker_ips or [])} IPs. "
+                f"Status: {campaign.status}."
+            ),
+            "first_seen": _fmt_dt(campaign.first_seen),
+            "last_seen": _fmt_dt(campaign.last_seen),
+            "labels": ["honeypot", f"status:{campaign.status}"],
+        }
+        objects.append(campaign_stix)
+
+        # Attacker IP indicators
+        for ip in campaign.attacker_ips or []:
+            ind_id = f"indicator--{_uuid.uuid5(_uuid.NAMESPACE_URL, 'hp-ip-' + ip)}"
+            indicator: dict[str, Any] = {
+                "type": "indicator",
+                "spec_version": "2.1",
+                "id": ind_id,
+                "created": _now_utc(),
+                "modified": _now_utc(),
+                "name": f"ip:{ip}",
+                "indicator_types": ["malicious-activity"],
+                "pattern": f"[ipv4-addr:value = '{ip}']",
+                "pattern_type": "stix",
+                "valid_from": _fmt_dt(campaign.first_seen),
+                "labels": ["tlp:white", "honeypot-attacker"],
+                "confidence": 60,
+            }
+            objects.append(indicator)
+
+            # Relationship: indicator indicates campaign
+            objects.append(
+                {
+                    "type": "relationship",
+                    "spec_version": "2.1",
+                    "id": f"relationship--{_uuid.uuid5(_uuid.NAMESPACE_URL, 'hp-rel-' + ip + campaign.id)}",
+                    "created": _now_utc(),
+                    "modified": _now_utc(),
+                    "relationship_type": "indicates",
+                    "source_ref": ind_id,
+                    "target_ref": campaign_stix["id"],
+                }
+            )
+
+        # ATT&CK technique attack-patterns
+        for ttp in campaign.ttp_ids or []:
+            ap_id = f"attack-pattern--{_uuid.uuid5(_uuid.NAMESPACE_URL, ttp)}"
+            if not any(o.get("id") == ap_id for o in objects):
+                objects.append(
+                    {
+                        "type": "attack-pattern",
+                        "spec_version": "2.1",
+                        "id": ap_id,
+                        "created": _now_utc(),
+                        "modified": _now_utc(),
+                        "name": ttp,
+                        "external_references": [
+                            {
+                                "source_name": "mitre-attack",
+                                "external_id": ttp,
+                                "url": f"https://attack.mitre.org/techniques/{ttp.replace('.', '/')}",
+                            }
+                        ],
+                    }
+                )
+
+    return _bundle(*objects)

@@ -20,7 +20,10 @@ import { Docs } from './pages/Docs'
 import { RecentArticles } from './pages/RecentArticles'
 import { HuntList } from './pages/HuntList'
 import { HuntWorkbench } from './pages/HuntWorkbench'
-import { DarkWebMonitor } from './pages/DarkWebMonitor'
+import { ThreatGraphView } from './pages/ThreatGraphView'
+import { MitreHeatmapView } from './pages/MitreHeatmapView'
+import { Honeypot } from './pages/Honeypot'
+import { Operations } from './pages/Operations'
 
 export default function App() {
   return (
@@ -29,7 +32,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/intel" element={<IntelFeed />} />
-          <Route path="/dark-web" element={<DarkWebMonitor />} />
+
           <Route path="/intel/:id" element={<ThreatDetail />} />
           <Route path="/actors" element={<Actors />} />
           <Route path="/actors/:id" element={<ActorDetail />} />
@@ -43,11 +46,15 @@ export default function App() {
           <Route path="/malware/:id" element={<MalwareDetail />} />
           <Route path="/ai-threats" element={<AiThreats />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/graph" element={<ThreatGraphView />} />
+          <Route path="/heatmap" element={<MitreHeatmapView />} />
           <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/articles" element={<RecentArticles />} />
           <Route path="/hunt" element={<HuntList />} />
           <Route path="/hunt/:id" element={<HuntWorkbench />} />
+          <Route path="/honeypot" element={<Honeypot />} />
+          <Route path="/operations" element={<Operations />} />
         </Routes>
       </Shell>
     </BrowserRouter>

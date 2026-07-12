@@ -125,6 +125,38 @@ Set `PYTHIA_API_KEY` in your `.env` file.
 | `PUT` | `/v1/hunts/{id}/detections/{det_id}` | Edit a drafted detection rule *(auth)* |
 | `POST` | `/v1/hunts/{id}/detections/{det_id}/promote` | Promote a draft rule to Pythia's main signature database *(auth)* |
 
+### Honeypot Collection
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/v1/honeypot/events/bulk` | Batch ingest Cowrie/T-Pot events *(auth)* |
+| `POST` | `/v1/honeypot/events` | Single event ingest *(auth)* |
+| `GET` | `/v1/honeypot/events` | List events (`?ip=`, `?type=`, `?campaign=`, `?since=`) |
+| `GET` | `/v1/honeypot/events/{id}` | Event detail with enrichment data |
+| `GET` | `/v1/honeypot/campaigns` | List campaigns (`?status=active\|dormant\|archived`) |
+| `GET` | `/v1/honeypot/campaigns/{id}` | Campaign detail + member event summary |
+| `POST` | `/v1/honeypot/campaigns/{id}/generate-report` | Queue campaign CTI report generation *(auth)* |
+| `POST` | `/v1/honeypot/detect-now` | Manually trigger campaign clustering *(auth)* |
+| `GET` | `/v1/honeypot/stats/daily` | Last 24-hour summary (top IPs, ports, countries, credentials) |
+| `GET` | `/v1/honeypot/stats/realtime` | Last 5-minute event counts by honeypot type |
+| `GET` | `/v1/honeypot/feeds/blocklist.txt` | Plaintext IP blocklist (high-confidence + active campaigns) |
+| `GET` | `/v1/honeypot/taxii/honeypot-iocs` | STIX 2.1 bundle of campaign IOCs (TAXII-compatible) |
+| `WS` | `/v1/honeypot/stream` | WebSocket — live event stream |
+
+### SIEM Integration
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/v1/siem/status` | Test SIEM connection; return type and connection state |
+| `POST` | `/v1/siem/rules/deploy/{rule_id}` | Convert + push one Sigma rule to the configured SIEM *(auth)* |
+| `POST` | `/v1/siem/rules/deploy-all` | Push all active DetectionRules to the SIEM *(auth)* |
+| `DELETE` | `/v1/siem/rules/{rule_id}` | Remove a rule from the SIEM *(auth)* |
+| `GET` | `/v1/siem/alerts` | List SIEM alerts (`?triage_status=`, `?severity=`, `?since=`) |
+| `GET` | `/v1/siem/alerts/stats` | Alert counts by severity and triage status |
+| `GET` | `/v1/siem/alerts/{id}` | Alert detail |
+| `POST` | `/v1/siem/alerts` | Webhook receiver — SIEM posts here when a rule fires |
+| `PATCH` | `/v1/siem/alerts/{id}/triage` | Update triage status *(auth)* |
+
 ### Feed
 
 | Method | Endpoint | Description |
@@ -138,9 +170,19 @@ Set `PYTHIA_API_KEY` in your `.env` file.
 | Variable | Default | Description |
 |---|---|---|
 | `PHISHTANK_API_KEY` | — | PhishTank app key for phishing URL feed |
-| `MALPEDIA_API_KEY` | — | Malpedia API token for full family data |
 | `OTX_API_KEY` | — | AlienVault OTX API key (reserved, not yet implemented) |
 | `PYTHIA_ENABLE_SCHEDULER` | `false` | Start APScheduler background sync jobs on API startup |
+| `PYTHIA_HONEYPOT_INGEST_ENABLED` | `false` | Enable `/v1/honeypot` endpoints |
+| `ABUSEIPDB_API_KEY` | — | AbuseIPDB enrichment (free: 1,000 checks/day) |
+| `GREYNOISE_API_KEY` | — | GreyNoise enrichment (free community tier) |
+| `VIRUSTOTAL_API_KEY` | — | VirusTotal enrichment (free: 500 req/day) |
+| `MAXMIND_DB_PATH` | — | Path to `GeoLite2-City.mmdb` |
+| `MAXMIND_ASN_DB_PATH` | — | Path to `GeoLite2-ASN.mmdb` |
+| `PYTHIA_SIEM_TYPE` | — | `wazuh`, `splunk`, or `elastic` (blank = disabled) |
+| `PYTHIA_SIEM_URL` | — | Base URL of the SIEM API |
+| `PYTHIA_SIEM_USERNAME` | — | SIEM API username |
+| `PYTHIA_SIEM_PASSWORD` | — | SIEM API password |
+| `PYTHIA_SIEM_API_TOKEN` | — | API token (Elastic/OpenSearch only) |
 
 ---
 

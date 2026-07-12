@@ -5,12 +5,12 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { timeAgo } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
-const WEBHOOK_TYPES = ['slack', 'discord', 'generic'] as const
+const WEBHOOK_TYPES = ['slack', 'discord', 'siem'] as const
 
 const WEBHOOK_COLORS: Record<string, string> = {
   slack: 'bg-green-900/40 text-green-300',
   discord: 'bg-indigo-900/40 text-indigo-300',
-  generic: 'bg-zinc-800 text-zinc-300',
+  siem: 'bg-orange-900/40 text-orange-300',
 }
 
 type FilterTab = 'actor' | 'ttp' | 'sector'
@@ -93,7 +93,7 @@ export function Watchlist() {
               <p className="mt-1 text-xs text-text-muted leading-relaxed">
                 Monitor specific threat actors, ATT&CK techniques, or industry sectors. Get instant
                 alerts when Pythia ingests matching intelligence — delivered to Slack, Discord, or
-                any webhook endpoint.
+                an external SIEM (like Splunk or Elastic) via a standard JSON webhook.
               </p>
               <p className="mt-3 text-xs text-text-muted">
                 Use the form below to create your first alert subscription.

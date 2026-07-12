@@ -20,8 +20,8 @@ class OwaspLlmItem(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     detection_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    atlas_mappings: Mapped[list] = mapped_column(JSON, default=list)   # [AML.Txxx]
-    cwe_ids: Mapped[list] = mapped_column(JSON, default=list)           # [CWE-77]
+    atlas_mappings: Mapped[list] = mapped_column(JSON, default=list)  # [AML.Txxx]
+    cwe_ids: Mapped[list] = mapped_column(JSON, default=list)  # [CWE-77]
     mitigations: Mapped[list] = mapped_column(JSON, default=list)
     real_world_examples: Mapped[list] = mapped_column(JSON, default=list)
     references: Mapped[list] = mapped_column(JSON, default=list)

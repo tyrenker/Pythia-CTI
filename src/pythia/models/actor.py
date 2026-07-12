@@ -19,7 +19,9 @@ class ThreatActor(Base):
     name: Mapped[str] = mapped_column(String, unique=True, index=True)
     aliases: Mapped[list] = mapped_column(JSON, default=list)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    first_observed: Mapped[str | None] = mapped_column(String(10), nullable=True)  # YYYY or YYYY-MM-DD
+    first_observed: Mapped[str | None] = mapped_column(
+        String(10), nullable=True
+    )  # YYYY or YYYY-MM-DD
     country_code: Mapped[str | None] = mapped_column(String(4), nullable=True)
     sponsor_type: Mapped[str] = mapped_column(String, default="unknown")
     motivations: Mapped[list] = mapped_column(JSON, default=list)
@@ -46,7 +48,9 @@ class ActorTTPMapping(Base):
     __tablename__ = "actor_ttp_mappings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    actor_id: Mapped[str] = mapped_column(ForeignKey("threat_actors.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[str] = mapped_column(
+        ForeignKey("threat_actors.id", ondelete="CASCADE"), index=True
+    )
     technique_id: Mapped[str] = mapped_column(String, index=True)
     use_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(String, default="attck")

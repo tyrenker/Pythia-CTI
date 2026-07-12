@@ -91,6 +91,7 @@ def list_sources(
         q = q.filter_by(active=True)
     return q.order_by(IntelFeedSource.name).all()
 
+
 @router.post("/sources", response_model=FeedSourceOut, status_code=201)
 def add_source(
     body: AddSourceBody,
@@ -113,6 +114,7 @@ def add_source(
     session.refresh(source)
     return source
 
+
 @router.patch("/sources/{source_id}", response_model=FeedSourceOut)
 def patch_source(
     source_id: str,
@@ -134,6 +136,7 @@ def patch_source(
     session.commit()
     session.refresh(source)
     return source
+
 
 @router.delete("/sources/{source_id}", status_code=204)
 def delete_source(
@@ -166,6 +169,7 @@ def list_articles(
         q = q.filter(IntelFeedArticle.published_at >= since)
     return q.order_by(IntelFeedArticle.published_at.desc()).offset(offset).limit(limit).all()
 
+
 @router.get("/articles/{article_id}", response_model=FeedArticleOut)
 def get_article(
     article_id: str,
@@ -175,6 +179,7 @@ def get_article(
     if article is None:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
+
 
 @router.post("/fetch", status_code=202)
 def trigger_fetch(

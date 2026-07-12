@@ -24,7 +24,9 @@ class AttckTechnique(Base):
     detection_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     platforms: Mapped[list] = mapped_column(JSON, default=list)
     data_sources: Mapped[list] = mapped_column(JSON, default=list)
-    mitigations: Mapped[list] = mapped_column(JSON, default=list)  # [{"id": ..., "name": ..., "desc": ...}]
+    mitigations: Mapped[list] = mapped_column(
+        JSON, default=list
+    )  # [{"id": ..., "name": ..., "desc": ...}]
     source_url: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

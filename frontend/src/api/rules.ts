@@ -7,6 +7,8 @@ interface ListRulesParams {
   severity?: string
   technique_id?: string
   source?: string
+  sort_by?: string
+  sort_dir?: string
   limit?: number
   offset?: number
 }
