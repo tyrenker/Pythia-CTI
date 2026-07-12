@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     api_key: str = Field(default="changeme", description="API key for write endpoints")
 
     database_url: str = "sqlite:///./pythia.db"
+    celery_broker_url: str = "redis://127.0.0.1:6379/0"
+    celery_result_backend: str = "redis://127.0.0.1:6379/0"
 
     claude_model: str = "claude-sonnet-4-6"
     anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
@@ -47,15 +49,7 @@ class Settings(BaseSettings):
     feed_auto_ingest: bool = Field(default=False, description="Auto-run Claude on new feed articles")
     feed_max_articles_per_run: int = Field(default=10, description="Max Claude calls per scheduler tick")
 
-    # Dark web monitor
-    tor_host: str = Field(default="127.0.0.1", description="Tor SOCKS5/control proxy host")
-    tor_socks_port: int = Field(default=9050, description="Tor SOCKS5 proxy port")
-    tor_control_port: int = Field(default=9051, description="Tor stem control port")
-    tor_control_password: str | None = Field(default=None, description="Tor control port password")
-    tor_required: bool = Field(default=False, description="Crash on startup if Tor is unavailable")
-    dark_web_auto_ingest: bool = Field(default=False, description="Auto-run Claude on fetched dark web posts")
-    dark_web_max_per_run: int = Field(default=5, description="Max Claude calls per dark web scheduler tick")
-    dark_web_poll_interval_hours: int = Field(default=4, description="Default poll interval for new sources")
+
 
     @model_validator(mode="after")
     def resolve_sqlite_path(self) -> Settings:

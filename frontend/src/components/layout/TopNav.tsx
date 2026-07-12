@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Target,
   Globe,
+  Network,
+  Grid3x3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
@@ -27,7 +29,6 @@ import { ApiKeyModal } from '../settings/ApiKeyModal'
 const INTELLIGENCE_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/intel', label: 'Intel Feed', icon: Rss },
-  { to: '/dark-web', label: 'Dark Web', icon: Globe },
   { to: '/actors', label: 'Actors', icon: Users },
   { to: '/ttps', label: 'TTPs', icon: Crosshair },
   { to: '/iocs', label: 'IoCs', icon: AlertCircle },
@@ -40,6 +41,8 @@ const DEFENSE_ITEMS = [
   { to: '/malware', label: 'Malware', icon: Bug },
   { to: '/ai-threats', label: 'AI Threats', icon: Bot },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/graph', label: 'Threat Graph', icon: Network },
+  { to: '/heatmap', label: 'MITRE Heatmap', icon: Grid3x3 },
   { to: '/watchlist', label: 'Watchlist', icon: Bookmark },
 ]
 

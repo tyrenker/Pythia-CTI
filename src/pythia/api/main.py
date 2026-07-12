@@ -15,7 +15,6 @@ from pythia.api import (
     actors,
     ai_threats,
     analytics,
-    dark_web,
     feed,
     hunts,
     intel_feed,
@@ -28,6 +27,8 @@ from pythia.api import (
     threats,
     ttps,
     watchlist,
+    rag,
+    stix,
 )
 from pythia.core.config import get_settings
 from pythia.core.db import init_db
@@ -85,7 +86,8 @@ def create_app() -> FastAPI:
     app.include_router(malware.router, prefix="/v1/malware", tags=["malware"])
     app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])
     app.include_router(hunts.router, prefix="/v1/hunts", tags=["hunts"])
-    app.include_router(dark_web.router, prefix="/v1/dark-web", tags=["dark-web"])
+    app.include_router(rag.router, prefix="/v1/rag", tags=["rag"])
+    app.include_router(stix.router, prefix="/v1/stix", tags=["stix"])
 
     # Serve built frontend — must be last so it doesn't shadow /v1/* or /docs
     _frontend_dist = (

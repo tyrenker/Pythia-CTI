@@ -305,13 +305,22 @@ async def list_atlas_techniques(
                 result.append(m.get("id") or m.get("name") or str(m))
         return result
 
+    def _coerce_subtechniques(raw: list) -> list[str]:
+        result = []
+        for s in raw:
+            if isinstance(s, str):
+                result.append(s)
+            elif isinstance(s, dict):
+                result.append(s.get("id") or s.get("name") or str(s))
+        return result
+
     return [
         AtlasTechniqueOut(
             technique_id=t.technique_id,
             name=t.name,
             description=t.description,
             tactics=t.tactics or [],
-            subtechniques=t.subtechniques or [],
+            subtechniques=_coerce_subtechniques(t.subtechniques or []),
             mitigations=_coerce_mitigations(t.mitigations or []),
             source_url=t.source_url,
         )

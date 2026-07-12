@@ -11,4 +11,3 @@ from pythia.models.watchlist import Watchlist  # noqa: F401
 from pythia.models.sync_log import SyncLog  # noqa: F401
 from pythia.models.intel_feed import IntelFeedSource, IntelFeedArticle  # noqa: F401
 from pythia.models.hunt import HuntSession, HuntObservation, HuntNote, HuntDraftDetection  # noqa: F401
-from pythia.models.dark_web import DarkWebForumSource, DarkWebPost  # noqa: F401

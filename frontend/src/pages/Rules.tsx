@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { SearchInput } from '@/components/shared/SearchInput'
 import { StatStrip } from '@/components/shared/StatStrip'
 import { RULE_SOURCE_LABELS, SEVERITY_COLORS } from '@/lib/constants'
-import { cn } from '@/lib/utils'
+import { cn, timeAgo } from '@/lib/utils'
 import type { DetectionRule } from '@/types/api'
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low', 'informational']
@@ -126,6 +126,7 @@ export function Rules() {
   const [severity, setSeverity] = useState('')
   const [techniqueId, setTechniqueId] = useState('')
   const [ruleSource, setRuleSource] = useState('')
+  const [sortOption, setSortOption] = useState('created_at:desc')
   const [showDrawer, setShowDrawer] = useState(false)
 
   function resetPage() { setPage(1) }
@@ -148,6 +149,8 @@ export function Rules() {
     severity: severity || undefined,
     technique_id: techniqueId || undefined,
     source: ruleSource || undefined,
+    sort_by: sortOption.split(':')[0],
+    sort_dir: sortOption.split(':')[1],
   }
 
   const { data, isLoading } = useRules({
@@ -290,11 +293,24 @@ export function Rules() {
       render: (r: DetectionRule) => {
         const label =
           Object.entries(RULE_SOURCE_LABELS).find(([key]) => r.source_url?.includes(key))?.[1] ??
-          (r.source_url ? 'local' : '—')
+          (r.source_url ? 'local' : 'Pythia AI')
+        
         return (
-          <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">{label}</span>
+          <span className={cn(
+            "rounded-md px-2 py-0.5 text-xs",
+            label === 'Pythia AI' ? "bg-[#00ff88]/10 text-[#00ff88]" : "bg-zinc-800 text-zinc-400"
+          )}>
+            {label}
+          </span>
         )
       },
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      render: (r: DetectionRule) => (
+        <span className="text-text-muted">{r.created_at ? timeAgo(r.created_at) : '—'}</span>
+      ),
     },
     {
       key: 'technique_ids',
@@ -450,6 +466,16 @@ export function Rules() {
         >
           <option value="">All sources</option>
           {RULE_SOURCES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select>
+        <select
+          value={sortOption}
+          onChange={e => { setSortOption(e.target.value); resetPage() }}
+          className="border border-[#2a2a3a] bg-[#12121a] px-3 py-1.5 font-mono text-[10px] text-[#9ca3af] focus:outline-none focus:border-[#00ff88] transition-colors ml-auto"
+        >
+          <option value="created_at:desc">Newest first</option>
+          <option value="created_at:asc">Oldest first</option>
+          <option value="title:asc">Name (A-Z)</option>
+          <option value="title:desc">Name (Z-A)</option>
         </select>
       </FilterBar>
 
