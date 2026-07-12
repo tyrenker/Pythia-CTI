@@ -85,7 +85,10 @@ _SENTINEL_TABLE: dict[tuple[str, str], str] = {
 }
 
 _SPLUNK_BASE: dict[tuple[str, str], str] = {
-    ("process_creation", "windows"): "index=windows (EventCode=4688 OR source=WinEventLog:Security)",
+    (
+        "process_creation",
+        "windows",
+    ): "index=windows (EventCode=4688 OR source=WinEventLog:Security)",
     ("network_connection", "windows"): "index=windows (EventCode=3 OR source=WinEventLog:Security)",
     ("network_connection", ""): "index=network",
     ("file_event", "windows"): "index=windows EventCode=11",
@@ -133,7 +136,7 @@ def _selection_to_clause(sel: dict[str, Any], platform: str) -> str:
 
         elif platform == "elastic":
             if modifier == "re":
-                terms = [f'{field}: /{v}/' for v in values]
+                terms = [f"{field}: /{v}/" for v in values]
             else:
                 terms = [f'{field}: "{_norm_value(str(v), modifier, platform)}"' for v in values]
             parts.append(f"({' or '.join(terms)})")
@@ -149,7 +152,9 @@ def _selection_to_clause(sel: dict[str, Any], platform: str) -> str:
             op = kql_ops.get(modifier, "contains")
             if len(values) > 1:
                 quoted = ", ".join(f'"{v}"' for v in values)
-                terms = f"({field} in~ ({quoted}))" if op == "==" else f"({field} has_any ({quoted}))"
+                terms = (
+                    f"({field} in~ ({quoted}))" if op == "==" else f"({field} has_any ({quoted}))"
+                )
             else:
                 terms = f'({field} {op} "{values[0]}")'
             parts.append(terms)
@@ -157,7 +162,9 @@ def _selection_to_clause(sel: dict[str, Any], platform: str) -> str:
     return " and ".join(parts) if parts else ""
 
 
-def _parse_condition(condition_str: str, selections: dict[str, dict[str, Any]], platform: str) -> str:
+def _parse_condition(
+    condition_str: str, selections: dict[str, dict[str, Any]], platform: str
+) -> str:
     """Evaluate a Sigma condition expression against named selections."""
     tokens = condition_str.strip().split()
     # Replace selection names with their clause
@@ -203,8 +210,7 @@ def convert(sigma_yaml: str, backend: str) -> str:
 
     # Collect named selections (everything in detection except 'condition')
     selections: dict[str, dict[str, Any]] = {
-        k: v for k, v in detection.items()
-        if k != "condition" and isinstance(v, dict)
+        k: v for k, v in detection.items() if k != "condition" and isinstance(v, dict)
     }
     # Handle list-style selections (Sigma allows list of dicts — OR them)
     for k, v in list(selections.items()):
@@ -228,7 +234,9 @@ def convert(sigma_yaml: str, backend: str) -> str:
         return condition_clause
 
     elif platform == "sentinel":
-        table = _SENTINEL_TABLE.get((category, product), _SENTINEL_TABLE.get((category, ""), "Event"))
+        table = _SENTINEL_TABLE.get(
+            (category, product), _SENTINEL_TABLE.get((category, ""), "Event")
+        )
         where = f"| where {condition_clause}" if condition_clause else ""
         return f"{table}\n{where}".strip()
 

@@ -37,3 +37,10 @@ export function useSectors(sponsorType?: string, country?: string) {
     queryFn: () => apiFetch<SectorReport>(`/analytics/sectors${qs}`),
   })
 }
+
+export function useGraphData() {
+  return useQuery({
+    queryKey: ['graph-data'],
+    queryFn: () => apiFetch<any>('/analytics/graph'),
+  })
+}

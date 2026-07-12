@@ -40,8 +40,15 @@ def _matches(watchlist: Watchlist, report: SourceReport) -> bool:
 def _slack_payload(watchlist: Watchlist, report: SourceReport) -> bytes:
     pd: dict[str, Any] = report.parsed_data or {}
     summary = pd.get("summary") or report.title or report.id
-    actors = ", ".join(a.get("name", "") for a in (pd.get("actors") or []) if a.get("name")) or "Unknown"
-    ttps = ", ".join(t.get("technique_id", "") for t in (pd.get("ttps") or []) if t.get("technique_id")) or "None"
+    actors = (
+        ", ".join(a.get("name", "") for a in (pd.get("actors") or []) if a.get("name")) or "Unknown"
+    )
+    ttps = (
+        ", ".join(
+            t.get("technique_id", "") for t in (pd.get("ttps") or []) if t.get("technique_id")
+        )
+        or "None"
+    )
 
     payload = {
         "text": f":bell: *Pythia Watchlist Alert* — `{watchlist.name}`",

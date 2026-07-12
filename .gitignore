@@ -84,4 +84,7 @@ secrets/
 # Internal development plans and docs — never push
 internal_docs/
 memory/
-data/geoip
+
+# MaxMind GeoIP databases (large binary files, download separately)
+data/geoip/
+data/geoip/*.mmdb

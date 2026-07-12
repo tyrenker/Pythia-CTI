@@ -24,6 +24,7 @@ router = APIRouter()
 
 # ── Response schemas ─────────────────────────────────────────────────────────
 
+
 class AtlasTechniqueOut(BaseModel):
     technique_id: str
     name: str
@@ -74,6 +75,7 @@ class AiThreatOverview(BaseModel):
 
 
 # ── Curated AI security incident dataset ─────────────────────────────────────
+
 
 class _IncidentData(TypedDict):
     id: str
@@ -260,6 +262,7 @@ _AI_INCIDENTS: list[_IncidentData] = [
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=AiThreatOverview)
 async def get_ai_threat_overview(
     session: Session = Depends(get_session),
@@ -296,6 +299,7 @@ async def list_atlas_techniques(
     if tactic:
         q = q.filter(AtlasTechnique.tactics.contains(tactic))
     techs = q.order_by(AtlasTechnique.technique_id).offset(offset).limit(limit).all()
+
     def _coerce_mitigations(raw: list) -> list[str]:
         result = []
         for m in raw:
@@ -305,13 +309,22 @@ async def list_atlas_techniques(
                 result.append(m.get("id") or m.get("name") or str(m))
         return result
 
+    def _coerce_subtechniques(raw: list) -> list[str]:
+        result = []
+        for s in raw:
+            if isinstance(s, str):
+                result.append(s)
+            elif isinstance(s, dict):
+                result.append(s.get("id") or s.get("name") or str(s))
+        return result
+
     return [
         AtlasTechniqueOut(
             technique_id=t.technique_id,
             name=t.name,
             description=t.description,
             tactics=t.tactics or [],
-            subtechniques=t.subtechniques or [],
+            subtechniques=_coerce_subtechniques(t.subtechniques or []),
             mitigations=_coerce_mitigations(t.mitigations or []),
             source_url=t.source_url,
         )

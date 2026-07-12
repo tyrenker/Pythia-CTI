@@ -394,7 +394,7 @@ async def sector_targeting(
 
     Sorted by actor count descending. Filter by sponsor_type or country to narrow scope.
     """
-    q = session.query(ThreatActor).filter(ThreatActor.sectors_targeted != "[]")
+    q = session.query(ThreatActor)
     if sponsor_type:
         q = q.filter(ThreatActor.sponsor_type == sponsor_type)
     if country:
@@ -540,3 +540,63 @@ def geography_targeting(
         total_actors_with_sector_data=actors_with_data,
         rows=rows[:limit],
     )
+
+
+# ── Threat Graph Visualization ────────────────────────────────────────────────
+
+class GraphNode(BaseModel):
+    id: str
+    name: str
+    group: str
+    val: int = 1
+
+class GraphLink(BaseModel):
+    source: str
+    target: str
+    label: str = ""
+
+class GraphData(BaseModel):
+    nodes: list[GraphNode]
+    links: list[GraphLink]
+
+
+@router.get("/graph", response_model=GraphData)
+def threat_graph(session: Session = Depends(get_session)) -> GraphData:
+    """Builds a force-directed graph dataset of Actors, Malware, and Sectors."""
+    from pythia.models.malware import MalwareFamily
+
+    nodes = {}
+    links = []
+
+    # 1. Add Threat Actors
+    actors = session.query(ThreatActor).all()
+    for actor in actors:
+        nodes[actor.id] = GraphNode(id=actor.id, name=actor.name, group="Actor", val=2)
+
+        # Link Actors -> Sectors
+        for sector in actor.sectors_targeted or []:
+            sector_name = sector.strip()
+            if sector_name and sector_name not in _GEOGRAPHY_TERMS:
+                sector_id = f"sector_{sector_name.lower().replace(' ', '_')}"
+                if sector_id not in nodes:
+                    nodes[sector_id] = GraphNode(id=sector_id, name=sector_name, group="Sector", val=1)
+                links.append(GraphLink(source=actor.id, target=sector_id, label="targets"))
+
+        # Link Actors -> Geographies
+        for geo in actor.geographies_targeted or []:
+            geo_name = _norm_geo(geo.strip())
+            if geo_name:
+                geo_id = f"geo_{geo_name.lower().replace(' ', '_')}"
+                if geo_id not in nodes:
+                    nodes[geo_id] = GraphNode(id=geo_id, name=geo_name, group="Sector", val=1) # Using Sector group for now
+                links.append(GraphLink(source=actor.id, target=geo_id, label="targets"))
+
+    # 2. Add Malware
+    malwares = session.query(MalwareFamily).all()
+    for mw in malwares:
+        nodes[mw.id] = GraphNode(id=mw.id, name=mw.name, group="Malware", val=1)
+        for actor_id in mw.actor_ids or []:
+            if actor_id in nodes:
+                links.append(GraphLink(source=actor_id, target=mw.id, label="uses"))
+
+    return GraphData(nodes=list(nodes.values()), links=links)

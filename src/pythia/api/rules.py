@@ -42,6 +42,7 @@ class RuleSummary(BaseModel):
     severity: str | None = None
     status: str | None = None
     source_url: str | None = None
+    created_at: str | None = None
 
 
 class RuleDetail(RuleSummary):
@@ -57,6 +58,7 @@ def _apply_rule_filters(
     source: str | None,
 ) -> object:
     from sqlalchemy.orm import Query as SAQuery
+
     q2: SAQuery = q  # type: ignore[assignment]
     if rule_type:
         q2 = q2.filter(DetectionRule.rule_type == rule_type.lower())
@@ -65,7 +67,10 @@ def _apply_rule_filters(
     if technique_id:
         q2 = q2.filter(DetectionRule.technique_ids.contains(technique_id.upper()))
     if source:
-        q2 = q2.filter(DetectionRule.source == source)
+        if source == "pythia-ai":
+            q2 = q2.filter(DetectionRule.source.is_(None), DetectionRule.source_url.is_(None))
+        else:
+            q2 = q2.filter(DetectionRule.source == source)
     return q2
 
 
@@ -84,15 +89,27 @@ async def count_rules(
 @router.get("", response_model=list[RuleSummary])
 async def list_rules(
     rule_type: str | None = Query(default=None, description="Filter by type: sigma | yara"),
-    technique_id: str | None = Query(default=None, description="Filter by linked ATT&CK technique ID"),
+    technique_id: str | None = Query(
+        default=None, description="Filter by linked ATT&CK technique ID"
+    ),
     severity: str | None = Query(default=None, description="Filter by severity"),
     source: str | None = Query(default=None, description="Filter by source slug"),
+    sort_by: str = Query(default="title", description="Sort field: title | created_at"),
+    sort_dir: str = Query(default="asc", description="Sort direction: asc | desc"),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ) -> list[RuleSummary]:
     q = _apply_rule_filters(session.query(DetectionRule), rule_type, technique_id, severity, source)
-    rules = q.order_by(DetectionRule.title).offset(offset).limit(limit).all()
+    
+    # Sorting
+    if sort_by == "created_at":
+        order_col = DetectionRule.created_at.desc() if sort_dir == "desc" else DetectionRule.created_at.asc()
+    else:
+        order_col = DetectionRule.title.desc() if sort_dir == "desc" else DetectionRule.title.asc()
+        
+    rules = q.order_by(order_col).offset(offset).limit(limit).all()
+    
     return [
         RuleSummary(
             id=r.id,
@@ -102,6 +119,7 @@ async def list_rules(
             severity=r.severity,
             status=r.status,
             source_url=r.source_url,
+            created_at=r.created_at.isoformat() if r.created_at else None,
         )
         for r in rules
     ]
@@ -114,7 +132,9 @@ async def get_sigma_rule(
 ) -> RuleDetail:
     rule = session.get(DetectionRule, rule_id)
     if not rule or rule.rule_type != "sigma":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sigma rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Sigma rule '{rule_id}' not found"
+        )
     return RuleDetail(
         id=rule.id,
         rule_type=rule.rule_type,
@@ -135,7 +155,9 @@ async def get_yara_rule(
 ) -> RuleDetail:
     rule = session.get(DetectionRule, rule_id)
     if not rule or rule.rule_type != "yara":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Yara rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Yara rule '{rule_id}' not found"
+        )
     return RuleDetail(
         id=rule.id,
         rule_type=rule.rule_type,
@@ -149,7 +171,12 @@ async def get_yara_rule(
     )
 
 
-@router.post("", response_model=RuleDetail, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post(
+    "",
+    response_model=RuleDetail,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key)],
+)
 async def create_rule(
     body: RuleCreate,
     session: Session = Depends(get_session),
@@ -157,7 +184,10 @@ async def create_rule(
     """Create a new Sigma or Yara detection rule."""
     rule_type = body.rule_type.lower()
     if rule_type not in ("sigma", "yara"):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="rule_type must be 'sigma' or 'yara'")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="rule_type must be 'sigma' or 'yara'",
+        )
 
     rule = DetectionRule(
         rule_type=rule_type,
@@ -188,7 +218,9 @@ async def create_rule(
 def _get_rule_or_404(rule_id: str, session: Session) -> DetectionRule:
     rule = session.get(DetectionRule, rule_id)
     if not rule:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_id}' not found"
+        )
     return rule
 
 
@@ -229,7 +261,9 @@ async def update_rule(
     )
 
 
-@router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
+@router.delete(
+    "/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)]
+)
 async def delete_rule(
     rule_id: str,
     session: Session = Depends(get_session),

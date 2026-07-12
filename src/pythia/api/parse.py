@@ -42,6 +42,7 @@ async def parse_intel(
     if request.url:
         try:
             import trafilatura
+
             downloaded = trafilatura.fetch_url(request.url)
             if downloaded:
                 raw_text = trafilatura.extract(downloaded) or ""
@@ -62,9 +63,12 @@ async def parse_intel(
 
     try:
         from pythia.ingestion.claude_parser import parse_article
+
         parsed = parse_article(raw_text, source_url=request.url)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -87,6 +91,7 @@ async def parse_intel(
     # Fire watchlist webhooks for any matching subscriptions (best-effort, non-blocking)
     try:
         from pythia.core.alerting import check_and_fire
+
         check_and_fire(report, session)
     except Exception:
         pass

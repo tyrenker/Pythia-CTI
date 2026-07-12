@@ -142,6 +142,24 @@ def process_article_queue(
         session.add(report)
         session.flush()
 
+        # Auto-create/update threat actors from the parsed article
+        try:
+            from pythia.ingestion.actor_linker import link_actors_from_report
+            linked = link_actors_from_report(session, parsed, report_url=article.url)
+            if linked:
+                print(f"    Linked {len(linked)} actor(s)")
+        except Exception as exc:
+            print(f"    Actor linking failed (non-fatal): {exc}")
+
+        # Auto-create/update IoCs from the parsed article
+        try:
+            from pythia.ingestion.ioc_linker import link_iocs_from_report
+            linked_iocs = link_iocs_from_report(session, parsed, report_url=article.url, report=report)
+            if linked_iocs:
+                print(f"    Linked {len(linked_iocs)} IoC(s)")
+        except Exception as exc:
+            print(f"    IoC linking failed (non-fatal): {exc}")
+
         article.status = "done"
         article.report_id = report.id
         session.flush()
@@ -210,6 +228,20 @@ def ingest_article(session: Any, article_id: str) -> str:
     )
     session.add(report)
     session.flush()
+
+    # Auto-create/update threat actors from the parsed article
+    try:
+        from pythia.ingestion.actor_linker import link_actors_from_report
+        link_actors_from_report(session, parsed, report_url=article.url)
+    except Exception:
+        pass  # Actor linking is best-effort; don't fail the ingestion
+
+    # Auto-create/update IoCs from the parsed article
+    try:
+        from pythia.ingestion.ioc_linker import link_iocs_from_report
+        link_iocs_from_report(session, parsed, report_url=article.url, report=report)
+    except Exception as exc:
+        print(f"    IoC linking failed (non-fatal): {exc}")
 
     article.status = "done"
     article.report_id = report.id

@@ -31,28 +31,29 @@ dependencies = [
     "typer>=0.12",
     "rich>=13.7",
     "python-dotenv>=1.0",
+    "psycopg2-binary>=2.9.9",
+    "celery>=5.4.0",
+    "redis>=5.0.4",
 ]
 
 [project.optional-dependencies]
 ingestion = [
     "anthropic>=0.40",
     "httpx>=0.27",
-    "httpx[socks]>=0.27",
     "trafilatura>=1.10",
     "selectolax>=0.3",
     "feedparser>=6.0",
 ]
-dark-web = [
-    "httpx[socks]>=0.27",
-    "stem>=1.8",
-    "beautifulsoup4>=4.12",
-    "lxml>=5.0",
-]
+
 detections = [
     "pysigma>=0.11",
     "pysigma-backend-splunk>=1.1",
     "pysigma-backend-elasticsearch>=1.1",
     "yara-python>=4.5",
+]
+enrichment = [
+    "geoip2>=4.8",
+    "httpx>=0.27",
 ]
 reporting = [
     "jinja2>=3.1",
@@ -74,7 +75,7 @@ dev = [
     "mypy>=1.10",
 ]
 all = [
-    "pythia[ingestion,dark-web,detections,reporting,scheduling]",
+    "pythia[ingestion,detections,reporting,scheduling,enrichment]",
 ]
 
 [project.scripts]
@@ -122,7 +123,7 @@ disallow_untyped_defs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["trafilatura.*", "selectolax.*", "weasyprint.*", "yara.*", "apscheduler.*", "feedparser.*", "stem.*", "bs4.*"]
+module = ["trafilatura.*", "selectolax.*", "weasyprint.*", "yara.*", "apscheduler.*", "feedparser.*", "bs4.*", "geoip2.*", "maxminddb.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
