@@ -84,3 +84,4 @@ secrets/
 # Internal development plans and docs — never push
 internal_docs/
 memory/
+data/geoip
