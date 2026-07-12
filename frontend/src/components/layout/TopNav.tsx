@@ -22,6 +22,7 @@ import {
   Network,
   Grid3x3,
   Shield,
+  Radio,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
