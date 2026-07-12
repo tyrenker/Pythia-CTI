@@ -1,0 +1,109 @@
+# Wazuh single-node SIEM — runs independently from Pythia.
+#
+# Usage:
+#   docker compose -f docker-compose.siem.yml up -d
+#
+# Wazuh dashboard: https://localhost:443  (admin / SecretPassword)
+# Wazuh API:       https://localhost:55000 (wazuh-wui / MyS3cr37P450r.*-)
+#
+# After it's up:
+#   1. Set in .env:  PYTHIA_SIEM_TYPE=wazuh
+#                    PYTHIA_SIEM_URL=https://localhost:55000
+#                    PYTHIA_SIEM_USERNAME=wazuh-wui
+#                    PYTHIA_SIEM_PASSWORD=MyS3cr37P450r.*-
+#   2. Use Pythia's Operations page to deploy detection rules to Wazuh.
+#   3. Configure Wazuh to webhook back to Pythia (see docs/honeypot-siem-setup.md).
+#
+# Resource requirements: ~4 GB RAM minimum.
+
+services:
+  wazuh.manager:
+    image: wazuh/wazuh-manager:4.7.3
+    hostname: wazuh.manager
+    restart: always
+    ports:
+      - "1514:1514"       # agent events
+      - "1515:1515"       # agent enrollment
+      - "514:514/udp"     # syslog
+      - "55000:55000"     # REST API
+    environment:
+      - INDEXER_URL=https://wazuh.indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=SecretPassword
+      - FILEBEAT_SSL_VERIFICATION_MODE=full
+      - SSL_CERTIFICATE_AUTHORITIES=/etc/ssl/root-ca.pem
+      - SSL_CERTIFICATE=/etc/ssl/filebeat.pem
+      - SSL_KEY=/etc/ssl/filebeat.key
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=MyS3cr37P450r.*-
+    volumes:
+      - wazuh-api-config:/var/ossec/api/configuration
+      - wazuh-etc:/var/ossec/etc
+      - wazuh-logs:/var/ossec/logs
+      - wazuh-queue:/var/ossec/queue
+      - wazuh-var-multigroups:/var/ossec/var/multigroups
+      - wazuh-integrations:/var/ossec/integrations
+      - wazuh-active-response:/var/ossec/active-response/bin
+      - wazuh-agentless:/var/ossec/agentless
+      - wazuh-wodles:/var/ossec/wodles
+      - filebeat-etc:/etc/filebeat
+      - wazuh-indexer-certs:/etc/ssl:ro
+
+  wazuh.indexer:
+    image: wazuh/wazuh-indexer:4.7.3
+    hostname: wazuh.indexer
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+      - wazuh-indexer-certs:/usr/share/wazuh-indexer/certs:ro
+
+  wazuh.dashboard:
+    image: wazuh/wazuh-dashboard:4.7.3
+    hostname: wazuh.dashboard
+    restart: always
+    ports:
+      - "443:5601"
+    environment:
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=SecretPassword
+      - WAZUH_API_URL=https://wazuh.manager
+      - DASHBOARD_USERNAME=kibanaserver
+      - DASHBOARD_PASSWORD=kibanaserver
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=MyS3cr37P450r.*-
+    volumes:
+      - wazuh-dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config
+      - wazuh-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
+      - wazuh-indexer-certs:/usr/share/wazuh-dashboard/certs:ro
+    depends_on:
+      - wazuh.indexer
+    links:
+      - wazuh.indexer:wazuh.indexer
+      - wazuh.manager:wazuh.manager
+
+volumes:
+  wazuh-api-config:
+  wazuh-etc:
+  wazuh-logs:
+  wazuh-queue:
+  wazuh-var-multigroups:
+  wazuh-integrations:
+  wazuh-active-response:
+  wazuh-agentless:
+  wazuh-wodles:
+  filebeat-etc:
+  wazuh-indexer-data:
+  wazuh-indexer-certs:
+  wazuh-dashboard-config:
+  wazuh-dashboard-custom:

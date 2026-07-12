@@ -58,6 +58,7 @@ def _apply_rule_filters(
     source: str | None,
 ) -> object:
     from sqlalchemy.orm import Query as SAQuery
+
     q2: SAQuery = q  # type: ignore[assignment]
     if rule_type:
         q2 = q2.filter(DetectionRule.rule_type == rule_type.lower())
@@ -88,7 +89,9 @@ async def count_rules(
 @router.get("", response_model=list[RuleSummary])
 async def list_rules(
     rule_type: str | None = Query(default=None, description="Filter by type: sigma | yara"),
-    technique_id: str | None = Query(default=None, description="Filter by linked ATT&CK technique ID"),
+    technique_id: str | None = Query(
+        default=None, description="Filter by linked ATT&CK technique ID"
+    ),
     severity: str | None = Query(default=None, description="Filter by severity"),
     source: str | None = Query(default=None, description="Filter by source slug"),
     sort_by: str = Query(default="title", description="Sort field: title | created_at"),
@@ -129,7 +132,9 @@ async def get_sigma_rule(
 ) -> RuleDetail:
     rule = session.get(DetectionRule, rule_id)
     if not rule or rule.rule_type != "sigma":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sigma rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Sigma rule '{rule_id}' not found"
+        )
     return RuleDetail(
         id=rule.id,
         rule_type=rule.rule_type,
@@ -150,7 +155,9 @@ async def get_yara_rule(
 ) -> RuleDetail:
     rule = session.get(DetectionRule, rule_id)
     if not rule or rule.rule_type != "yara":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Yara rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Yara rule '{rule_id}' not found"
+        )
     return RuleDetail(
         id=rule.id,
         rule_type=rule.rule_type,
@@ -164,7 +171,12 @@ async def get_yara_rule(
     )
 
 
-@router.post("", response_model=RuleDetail, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_api_key)])
+@router.post(
+    "",
+    response_model=RuleDetail,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key)],
+)
 async def create_rule(
     body: RuleCreate,
     session: Session = Depends(get_session),
@@ -172,7 +184,10 @@ async def create_rule(
     """Create a new Sigma or Yara detection rule."""
     rule_type = body.rule_type.lower()
     if rule_type not in ("sigma", "yara"):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="rule_type must be 'sigma' or 'yara'")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="rule_type must be 'sigma' or 'yara'",
+        )
 
     rule = DetectionRule(
         rule_type=rule_type,
@@ -203,7 +218,9 @@ async def create_rule(
 def _get_rule_or_404(rule_id: str, session: Session) -> DetectionRule:
     rule = session.get(DetectionRule, rule_id)
     if not rule:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Rule '{rule_id}' not found"
+        )
     return rule
 
 
@@ -244,7 +261,9 @@ async def update_rule(
     )
 
 
-@router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)])
+@router.delete(
+    "/{rule_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_api_key)]
+)
 async def delete_rule(
     rule_id: str,
     session: Session = Depends(get_session),

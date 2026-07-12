@@ -24,6 +24,7 @@ router = APIRouter()
 
 # ── Response schemas ─────────────────────────────────────────────────────────
 
+
 class AtlasTechniqueOut(BaseModel):
     technique_id: str
     name: str
@@ -74,6 +75,7 @@ class AiThreatOverview(BaseModel):
 
 
 # ── Curated AI security incident dataset ─────────────────────────────────────
+
 
 class _IncidentData(TypedDict):
     id: str
@@ -260,6 +262,7 @@ _AI_INCIDENTS: list[_IncidentData] = [
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=AiThreatOverview)
 async def get_ai_threat_overview(
     session: Session = Depends(get_session),
@@ -296,6 +299,7 @@ async def list_atlas_techniques(
     if tactic:
         q = q.filter(AtlasTechnique.tactics.contains(tactic))
     techs = q.order_by(AtlasTechnique.technique_id).offset(offset).limit(limit).all()
+
     def _coerce_mitigations(raw: list) -> list[str]:
         result = []
         for m in raw:

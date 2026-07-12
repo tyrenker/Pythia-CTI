@@ -21,7 +21,7 @@ class IoC(Base):
     first_seen: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_seen: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     confidence_source: Mapped[str] = mapped_column(String(1), default="F")  # A-F admiralty
-    confidence_info: Mapped[str] = mapped_column(String(1), default="6")    # 1-6 admiralty
+    confidence_info: Mapped[str] = mapped_column(String(1), default="6")  # 1-6 admiralty
     tlp: Mapped[str] = mapped_column(String, default="WHITE")
     pyramid_tier: Mapped[str] = mapped_column(String, default="hash")
     context: Mapped[str | None] = mapped_column(Text, nullable=True)

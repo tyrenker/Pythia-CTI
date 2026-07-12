@@ -150,7 +150,9 @@ class DraftDetectionRequest(BaseModel):
 def _get_session_or_404(session_id: str, db: Session) -> HuntSession:
     hunt = db.get(HuntSession, session_id)
     if not hunt:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Hunt '{session_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Hunt '{session_id}' not found"
+        )
     return hunt
 
 
@@ -188,7 +190,15 @@ def _detection_to_out(d: HuntDraftDetection) -> DraftDetectionOut:
 
 def _try_link_observation(obs: HuntObservation, db: Session) -> None:
     """Auto-link observation to existing DB record if one matches."""
-    if obs.obs_type in ("ioc_ip", "ioc_domain", "ioc_hash", "ioc_url", "ioc_email", "ioc_mutex", "ioc_registry"):
+    if obs.obs_type in (
+        "ioc_ip",
+        "ioc_domain",
+        "ioc_hash",
+        "ioc_url",
+        "ioc_email",
+        "ioc_mutex",
+        "ioc_registry",
+    ):
         ioc_match = db.query(IoC).filter(IoC.value == obs.value).first()
         if ioc_match:
             obs.linked_record_id = ioc_match.id
@@ -241,9 +251,7 @@ def _build_actor_context(hunt: HuntSession, db: Session) -> list[dict[str, objec
     q = db.query(ThreatActor)
 
     # Prefer actors that overlap on sector or motivation.
-    sector_filters = [
-        ThreatActor.sectors_targeted.contains(s) for s in (hunt.sector_focus or [])
-    ]
+    sector_filters = [ThreatActor.sectors_targeted.contains(s) for s in (hunt.sector_focus or [])]
     motivation_filters = [
         ThreatActor.motivations.contains(m) for m in (hunt.motivation_focus or [])
     ]
@@ -408,7 +416,9 @@ async def delete_hunt(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/{session_id}/observations", response_model=ObservationOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{session_id}/observations", response_model=ObservationOut, status_code=status.HTTP_201_CREATED
+)
 async def add_observation(
     session_id: str,
     body: CreateObservationRequest,
@@ -448,9 +458,11 @@ async def remove_observation(
     db: Session = Depends(get_session),
     _: None = Depends(require_api_key),
 ) -> None:
-    obs = db.query(HuntObservation).filter(
-        HuntObservation.id == obs_id, HuntObservation.session_id == session_id
-    ).first()
+    obs = (
+        db.query(HuntObservation)
+        .filter(HuntObservation.id == obs_id, HuntObservation.session_id == session_id)
+        .first()
+    )
     if not obs:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Observation not found")
     db.delete(obs)
@@ -576,7 +588,11 @@ async def refine_hypothesis(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/{session_id}/draft-detection", response_model=DraftDetectionOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{session_id}/draft-detection",
+    response_model=DraftDetectionOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def draft_detection(
     session_id: str,
     body: DraftDetectionRequest,
@@ -585,9 +601,7 @@ async def draft_detection(
 ) -> DraftDetectionOut:
     hunt = _get_session_or_404(session_id, db)
 
-    target_obs = [
-        o for o in hunt.observations if o.id in body.obs_ids
-    ]
+    target_obs = [o for o in hunt.observations if o.id in body.obs_ids]
     if not target_obs:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -606,8 +620,7 @@ async def draft_detection(
                 for o in target_obs
             ],
             "all_observations": [
-                {"obs_type": o.obs_type, "value": o.value}
-                for o in hunt.observations
+                {"obs_type": o.obs_type, "value": o.value} for o in hunt.observations
             ],
             "rule_type": body.rule_type,
             "hunt_context": {
@@ -628,7 +641,9 @@ async def draft_detection(
         pyramid_tier=str(result.get("pyramid_tier", "ttp")),
         linked_ttp_ids=result.get("linked_ttp_ids", []),
         linked_obs_ids=body.obs_ids,
-        rationale=str(result.get("pyramid_rationale", "")) if result.get("pyramid_rationale") else None,
+        rationale=str(result.get("pyramid_rationale", ""))
+        if result.get("pyramid_rationale")
+        else None,
         status="draft",
     )
     db.add(detection)
@@ -666,10 +681,14 @@ async def update_detection(
     db: Session = Depends(get_session),
     _: None = Depends(require_api_key),
 ) -> DraftDetectionOut:
-    detection = db.query(HuntDraftDetection).filter(
-        HuntDraftDetection.id == detection_id,
-        HuntDraftDetection.session_id == session_id,
-    ).first()
+    detection = (
+        db.query(HuntDraftDetection)
+        .filter(
+            HuntDraftDetection.id == detection_id,
+            HuntDraftDetection.session_id == session_id,
+        )
+        .first()
+    )
     if not detection:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Detection not found")
     if body.title is not None:
@@ -700,6 +719,7 @@ async def export_markdown(
 ) -> Response:
     hunt = _get_session_or_404(session_id, db)
     from pythia.exporters.hunt import export_hunt_markdown
+
     content = export_hunt_markdown(hunt)
     filename = f"hunt-{session_id[:8]}.md"
     return Response(
@@ -716,6 +736,7 @@ async def export_stix(
 ) -> Response:
     hunt = _get_session_or_404(session_id, db)
     from pythia.exporters.hunt import export_hunt_stix
+
     bundle = export_hunt_stix(hunt)
     filename = f"hunt-{session_id[:8]}-stix.json"
     return Response(
@@ -733,6 +754,7 @@ async def export_pdf(
 ) -> Response:
     hunt = _get_session_or_404(session_id, db)
     from pythia.reporting.pdf import render_hunt_report
+
     pdf_bytes = render_hunt_report(hunt, template)
     filename = f"hunt-{session_id[:8]}-{template}.pdf"
     return Response(
@@ -750,10 +772,14 @@ async def promote_detection(
     _: None = Depends(require_api_key),
 ) -> dict[str, str]:
     """Copy a draft detection into the main detection_rules table as pending_review."""
-    detection = db.query(HuntDraftDetection).filter(
-        HuntDraftDetection.id == detection_id,
-        HuntDraftDetection.session_id == session_id,
-    ).first()
+    detection = (
+        db.query(HuntDraftDetection)
+        .filter(
+            HuntDraftDetection.id == detection_id,
+            HuntDraftDetection.session_id == session_id,
+        )
+        .first()
+    )
     if not detection:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Detection not found")
 

@@ -21,6 +21,7 @@ import {
   Globe,
   Network,
   Grid3x3,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IngestBar } from '../shared/IngestBar'
@@ -44,6 +45,8 @@ const DEFENSE_ITEMS = [
   { to: '/graph', label: 'Threat Graph', icon: Network },
   { to: '/heatmap', label: 'MITRE Heatmap', icon: Grid3x3 },
   { to: '/watchlist', label: 'Watchlist', icon: Bookmark },
+  { to: '/honeypot', label: 'Honeypot', icon: Radio },
+  { to: '/operations', label: 'Operations', icon: Shield },
 ]
 
 const REFERENCE_ITEMS = [

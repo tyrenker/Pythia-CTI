@@ -44,13 +44,17 @@ class HuntSession(Base):
     )
 
     observations: Mapped[list[HuntObservation]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="HuntObservation.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="HuntObservation.created_at",
     )
     note: Mapped[HuntNote | None] = relationship(
         back_populates="session", cascade="all, delete-orphan", uselist=False
     )
     detections: Mapped[list[HuntDraftDetection]] = relationship(
-        back_populates="session", cascade="all, delete-orphan", order_by="HuntDraftDetection.created_at"
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="HuntDraftDetection.created_at",
     )
 
 
@@ -65,8 +69,10 @@ class HuntObservation(Base):
     value: Mapped[str] = mapped_column(String)
     pyramid_tier: Mapped[str | None] = mapped_column(String, nullable=True)
     confidence_source: Mapped[str] = mapped_column(String(1), default="F")  # Admiralty A-F
-    confidence_info: Mapped[str] = mapped_column(String(1), default="6")    # Admiralty 1-6
-    linked_record_id: Mapped[str | None] = mapped_column(String, nullable=True)  # UUID of matched DB record
+    confidence_info: Mapped[str] = mapped_column(String(1), default="6")  # Admiralty 1-6
+    linked_record_id: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # UUID of matched DB record
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

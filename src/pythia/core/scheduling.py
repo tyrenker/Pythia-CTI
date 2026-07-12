@@ -104,7 +104,38 @@ def start_scheduler() -> None:
     )
 
 
+    # Honeypot: campaign detection every 15 minutes
+    _scheduler.add_job(
+        _run_campaign_detection,
+        "interval",
+        minutes=15,
+        id="campaign_detection",
+    )
+
+    # Honeypot: daily summary report at 00:00 UTC
+    _scheduler.add_job(
+        _run_daily_honeypot_report,
+        "cron",
+        hour=0,
+        minute=0,
+        id="honeypot_daily_report",
+    )
+
     _scheduler.start()
+
+
+def _run_campaign_detection() -> None:
+    from pythia.ingestion.campaign_detector import run_campaign_detection
+
+    run_campaign_detection()
+
+
+def _run_daily_honeypot_report() -> None:
+    from pythia.core.db import SessionLocal
+    from pythia.reporting.honeypot_report import generate_daily_honeypot_report
+
+    with SessionLocal() as session:
+        generate_daily_honeypot_report(session)
 
 
 def stop_scheduler() -> None:

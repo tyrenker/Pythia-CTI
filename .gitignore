@@ -85,5 +85,6 @@ secrets/
 internal_docs/
 memory/
 
-# geoip 
-data/geoip
+# MaxMind GeoIP databases (large binary files, download separately)
+data/geoip/
+data/geoip/*.mmdb

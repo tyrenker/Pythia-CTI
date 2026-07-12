@@ -80,7 +80,9 @@ def _to_summary(r: SourceReport) -> ThreatSummary:
 
 @router.get("", response_model=list[ThreatSummary])
 async def list_threats(
-    status: str | None = Query(default=None, description="Filter by status (pending_review|accepted|rejected)"),
+    status: str | None = Query(
+        default=None, description="Filter by status (pending_review|accepted|rejected)"
+    ),
     tlp: str | None = Query(default=None, description="Filter by TLP marking"),
     limit: int = Query(default=50, le=500),
     offset: int = Query(default=0, ge=0),
@@ -102,7 +104,9 @@ async def get_threat(
 ) -> ThreatDetail:
     r = session.get(SourceReport, threat_id)
     if not r:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Threat report '{threat_id}' not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Threat report '{threat_id}' not found"
+        )
     pd = r.parsed_data or {}
     actors = [a.get("name", "") for a in (pd.get("actors") or [])]
     ttps = [t.get("technique_id", "") for t in (pd.get("ttps") or [])]

@@ -1,0 +1,49 @@
+# Local honeypot stack — run alongside the main docker-compose.yml.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.honeypot.yml up -d
+#
+# On a dedicated VPS (recommended for real attacker traffic):
+#   1. Copy this file and docker/cowrie/ + docker/honeypot-forwarder/ to the VPS
+#   2. Set PYTHIA_URL to your Pythia host (e.g. over Tailscale)
+#   3. Set PYTHIA_API_KEY to your API key
+#   4. docker compose -f docker-compose.honeypot.yml up -d
+#      (omit the main docker-compose.yml — Pythia runs on your home machine)
+#
+# WARNING: Running on a VPS exposes port 22 to the internet.
+# Ensure your REAL SSH is moved to port 64222 (or another non-standard port)
+# before starting this stack.
+
+services:
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: pythia-cowrie
+    hostname: svr01
+    ports:
+      - "22:2222/tcp"      # SSH honeypot (moves your real SSH to 64222 first!)
+      - "23:2223/tcp"      # Telnet honeypot
+    volumes:
+      - ./docker/cowrie/cowrie.cfg:/cowrie/etc/cowrie.cfg:ro
+      - cowrie-logs:/cowrie/var/log/cowrie
+      - cowrie-dl:/cowrie/var/lib/cowrie/downloads
+    restart: unless-stopped
+
+  honeypot-forwarder:
+    build: ./docker/honeypot-forwarder
+    container_name: pythia-honeypot-forwarder
+    depends_on:
+      - cowrie
+    environment:
+      PYTHIA_URL: "${PYTHIA_URL:-http://pythia:8000}"
+      PYTHIA_API_KEY: "${PYTHIA_API_KEY:-changeme}"
+      COWRIE_LOG: "/cowrie-logs/cowrie.json"
+      BATCH_SIZE: "50"
+      POLL_INTERVAL: "5"
+      HONEYPOT_TYPE: "cowrie"
+    volumes:
+      - cowrie-logs:/cowrie-logs:ro
+    restart: unless-stopped
+
+volumes:
+  cowrie-logs:
+  cowrie-dl:
